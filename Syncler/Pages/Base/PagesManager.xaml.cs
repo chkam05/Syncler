@@ -145,13 +145,17 @@ namespace Syncler.Pages.Base
         //  --------------------------------------------------------------------------------
         /// <summary> Navigate to newly created page. </summary>
         /// <param name="page"> Page to load. </param>
-        public void LoadPage(BasePage page)
+        /// <param name="preventLoadSamePage"> Prevent to load page with the same type. </param>
+        public void LoadPage(BasePage page, bool preventLoadSamePage = true)
         {
             var pageToLoad = page as Page;
 
             if (pageToLoad != null)
             {
                 var currPage = LoadedPage;
+
+                if (preventLoadSamePage && currPage != null && currPage.GetType() == page.GetType())
+                    return;
 
                 if (currPage != null && !currPage.OnGoForwardFromPage(page))
                     return;

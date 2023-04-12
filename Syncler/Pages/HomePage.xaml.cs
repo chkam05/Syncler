@@ -59,7 +59,7 @@ namespace Syncler.Pages
         /// <param name="e"> Event Arguments. </param>
         private void OnHomeMenuItemSelect(object sender, EventArgs e)
         {
-            //
+            _pagesManager.LoadPage(new HomePage(_pagesManager));
         }
 
         //  --------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ namespace Syncler.Pages
         /// <param name="e"> Event Arguments. </param>
         private void OnDataSelectorMenuItemSelect(object sender, EventArgs e)
         {
-            //
+            _pagesManager.LoadPage(new DataSelectorPage(_pagesManager));
         }
 
         //  --------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ namespace Syncler.Pages
         /// <param name="e"> Event Arguments. </param>
         private void OnSynchronisationMenuItemSelect(object sender, EventArgs e)
         {
-            //
+            _pagesManager.LoadPage(new SynchronisationPage(_pagesManager));
         }
 
         //  --------------------------------------------------------------------------------

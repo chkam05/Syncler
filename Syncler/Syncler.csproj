@@ -75,7 +75,15 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="InternalMessages\AddModifySyncGroupIM.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Pages\Base\PagesManager.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\DataSelectorPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -92,6 +100,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Pages\Settings\SettingsPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\SynchronisationPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -172,11 +184,21 @@
     <Compile Include="Data\Configuration\AppearanceThemeType.cs" />
     <Compile Include="Data\Configuration\Config.cs" />
     <Compile Include="Data\Configuration\ConfigManager.cs" />
+    <Compile Include="Data\Synchronisation\GroupConfig.cs" />
+    <Compile Include="Data\Synchronisation\GroupItem.cs" />
+    <Compile Include="Data\Synchronisation\SyncConfig.cs" />
+    <Compile Include="Data\Synchronisation\SyncManager.cs" />
     <Compile Include="Delegates.cs" />
+    <Compile Include="InternalMessages\AddModifySyncGroupIM.xaml.cs">
+      <DependentUpon>AddModifySyncGroupIM.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\Base\BasePage.cs" />
     <Compile Include="Pages\Base\OnPageLoadedEventArgs.cs" />
     <Compile Include="Pages\Base\PagesManager.xaml.cs">
       <DependentUpon>PagesManager.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\DataSelectorPage.xaml.cs">
+      <DependentUpon>DataSelectorPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
@@ -189,6 +211,9 @@
     </Compile>
     <Compile Include="Pages\Settings\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\SynchronisationPage.xaml.cs">
+      <DependentUpon>SynchronisationPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utilities\ApplicationHelper.cs" />
     <Compile Include="Utilities\ApplicationInstanceCommunicator.cs" />
