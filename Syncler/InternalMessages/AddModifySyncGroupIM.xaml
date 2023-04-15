@@ -33,6 +33,7 @@
     HeaderBorderBrush="{Binding AppearanceAccentColorBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"
     HeaderPadding="8"
     IconKind="Group"
+    MinWidth="512"
     Padding="0"
     Title="Add/Modify sync group."
     UseCustomSectionBreaksBorderBrush="True">
@@ -48,6 +49,8 @@
                 <Setter Property="MinWidth" Value="192"/>
             </Style>
 
+            <Style x:Key="GroupItemListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}"  TargetType="{x:Type cex:ListViewItemEx}"/>
+
             <!-- DATA TEMPLATES -->
 
             <DataTemplate x:Key="GroupItemDataTemplate">
@@ -60,7 +63,11 @@
 
                     <materialDesign:PackIcon
                         Grid.Column="0"
-                        Kind="Folder"/>
+                        Height="28"
+                        Kind="Folder"
+                        Margin="0,0,4,0"
+                        VerticalAlignment="Center"
+                        Width="28"/>
 
                     <StackPanel
                         Grid.Column="1"
@@ -79,9 +86,13 @@
 
                     <StackPanel
                         Grid.Column="2"
-                        Orientation="Vertical">
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
 
                         <cex:ButtonEx
+                            Command="{Binding DataContext.RemoveGroupItemCommand,
+                                RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
+                            CommandParameter="{Binding}"
                             Content="Remove"
                             IconKind="Delete"/>
 
@@ -102,13 +113,32 @@
             <StackPanel
                 Orientation="Vertical">
 
+                <TextBlock
+                    FontSize="14"
+                    Foreground="Red"
+                    Margin="8,0,8,8"
+                    Text="{Binding ErrorMessage}"
+                    TextWrapping="Wrap">
+
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ErrorMessage}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                    
+                </TextBlock>
+
                 <components:SettingsOptionControl
                     IconKind="Edit"
                     Title="Name"
                     Description="Group name.">
 
                     <components:SettingsOptionControl.Content>
-                        <TextBlock
+                        <cex:TextBoxEx
                             Text="{Binding GroupConfig.Name}"/>
                     </components:SettingsOptionControl.Content>
 
@@ -164,6 +194,7 @@
                     </cex:ExpanderEx.Header>
 
                     <cex:ListViewEx
+                        ItemContainerStyle="{StaticResource GroupItemListViewItemExStyle}"
                         ItemTemplate="{StaticResource GroupItemDataTemplate}"
                         ItemsSource="{Binding GroupConfig.Items}"/>
 

@@ -12,6 +12,7 @@
         <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/ComboBoxExStyle.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/ContextMenuExStyle.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/ExpanderExStyle.xaml"/>
+        <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/ListViewExStyle.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/ScrollViewerExStyle.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/TextBoxExStyle.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Base/UpDownTextBoxExStyle.xaml"/>
@@ -32,6 +33,8 @@
     <Style BasedOn="{StaticResource ContextMenuItemExStyle}" TargetType="{x:Type cex:ContextMenuItemEx}"/>
     <Style BasedOn="{StaticResource ContextMenuExStyle}" TargetType="{x:Type cex:ContextMenuEx}"/>
     <Style BasedOn="{StaticResource ExpanderExStyle}" TargetType="{x:Type cex:ExpanderEx}"/>
+    <Style BasedOn="{StaticResource ListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}"/>
+    <Style BasedOn="{StaticResource ListViewExStyle}" TargetType="{x:Type cex:ListViewEx}"/>
     <Style BasedOn="{StaticResource ScrollViewerExStyle}" TargetType="{x:Type cex:ScrollViewerEx}"/>
     <Style BasedOn="{StaticResource TextBoxExStyle}" TargetType="{x:Type cex:TextBoxEx}"/>
     <Style BasedOn="{StaticResource UpDownTextBoxExStyle}" TargetType="{x:Type cex:UpDownTextBoxEx}"/>

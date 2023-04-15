@@ -138,6 +138,15 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        //  --------------------------------------------------------------------------------
+        /// <summary> Trigger auto save. </summary>
+        /// <param name="autosave"> Autosave. </param>
+        private void TriggerAutoSave(bool autosave)
+        {
+            if (autosave)
+                SaveSettings();
+        }
+
         #endregion LOAD & SAVE METHODS
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
@@ -182,6 +191,47 @@ namespace Syncler.Data.Synchronisation
         }
 
         #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS
+
+        #region CONFIG MANAGEMENT METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Add group config. </summary>
+        /// <param name="groupConfig"> Group config to add. </param>
+        /// <param name="autosave"> Save after add. </param>
+        public void AddGroupConfig(GroupConfig groupConfig, bool autosave = false)
+        {
+            SyncConfig.Groups.Add(groupConfig);
+            TriggerAutoSave(autosave);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Get list of sync groups names. </summary>
+        /// <returns> Sync groups names. </returns>
+        public List<string> GetSyncGroupNames()
+        {
+            return SyncConfig.Groups.Select(g => g.Name).ToList();
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Check if group config exists in configuration. </summary>
+        /// <param name="groupConfig"> Group config. </param>
+        /// <returns> True - group config exists in configuration; False - otherwise. </returns>
+        public bool HasGroupConfig(GroupConfig groupConfig)
+        {
+            return SyncConfig.Groups.Contains(groupConfig);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Remove group config. </summary>
+        /// <param name="groupConfig"> Group config to remove. </param>
+        /// <param name="autosave"> Save after remove. </param>
+        public void RemoveGroupConfig(GroupConfig groupConfig, bool autosave = false)
+        {
+            SyncConfig.Groups.Remove(groupConfig);
+            TriggerAutoSave(autosave);
+        }
+
+        #endregion CONFIG MANAGEMENT METHODS
 
     }
 }

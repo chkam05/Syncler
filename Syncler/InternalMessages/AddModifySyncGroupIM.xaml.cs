@@ -1,34 +1,41 @@
 ﻿using chkam05.Tools.ControlsEx;
 using chkam05.Tools.ControlsEx.Data;
 using chkam05.Tools.ControlsEx.InternalMessages;
-using MaterialDesignThemes.Wpf;
 using Syncler.Data.Synchronisation;
+using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Syncler.InternalMessages
 {
     public partial class AddModifySyncGroupIM : StandardInternalMessageEx
     {
 
+        
+
+
         //  VARIABLES
 
+        private string _errorMessage = null;
         private GroupConfig _groupConfig;
+        private List<string> _groupConfigNames;
 
 
         //  GETTERS & SETTERS
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set
+            {
+                _errorMessage = value;
+                OnPropertyChanged(nameof(ErrorMessage));
+            }
+        }
 
         public GroupConfig GroupConfig
         {
@@ -39,6 +46,16 @@ namespace Syncler.InternalMessages
                 OnPropertyChanged(nameof(GroupConfig));
 
                 Title = value != null ? "Edit sync group" : "Add sync group";
+            }
+        }
+
+        public List<string> GroupConfigNames
+        {
+            get => _groupConfigNames;
+            set
+            {
+                _groupConfigNames = value;
+                OnPropertyChanged(nameof(GroupConfigNames));
             }
         }
 
@@ -73,7 +90,42 @@ namespace Syncler.InternalMessages
         /// <param name="e"> Routed Event Arguments. </param>
         private void AddCatalogButtonEx_Click(object sender, RoutedEventArgs e)
         {
-            //
+            var imFilesSelector = FilesSelectorInternalMessageEx.CreateSelectDirectoryInternalMessageEx(_parentContainer);
+
+            imFilesSelector.AllowCreate = false;
+            imFilesSelector.InitialDirectory = imFilesSelector.CurrentDirectory;
+            imFilesSelector.OnClose += (s, efs) =>
+            {
+                if (efs.Result == InternalMessageResult.Ok && Directory.Exists(efs.FilePath))
+                {
+                    if (!GroupConfig.ValidateGroupItemPath(efs.FilePath, out string errorMessage))
+                    {
+                        ErrorMessage = errorMessage;
+                        return;
+                    }
+
+                    GroupConfig.Items.Add(new GroupItem() { Path = efs.FilePath });
+                }
+            };
+
+            InternalMessagesHelper.ApplyVisualStyle(imFilesSelector);
+
+            _parentContainer.ShowMessage(imFilesSelector);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking ok button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        protected override void OnOkClick(object sender, RoutedEventArgs e)
+        {
+            if (!GroupConfig.ValidateGroup(out string errorMessage, GroupConfigNames))
+            {
+                ErrorMessage = errorMessage;
+                return;
+            }
+
+            base.OnOkClick(sender, e);
         }
 
         #endregion INTERACTION METHODS

@@ -24,11 +24,11 @@
             
             <!-- STYLES -->
 
-            <Style x:Key="GroupListViewItemExStyle" TargetType="{x:Type cex:ListViewItemEx}">
+            <Style x:Key="GroupListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
-                <Setter Property="MouseOverBorderBrush" Value="Transparent"/>
+                <Setter Property="MouseOverBackground" Value="Transparent"/>
                 <Setter Property="MouseOverBorderBrush" Value="Transparent"/>
                 <Setter Property="MouseOverForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
                 <Setter Property="SelectedBackground" Value="Transparent"/>
@@ -38,7 +38,9 @@
                 <Setter Property="SelectedInactiveBorderBrush" Value="Transparent"/>
                 <Setter Property="SelectedInactiveForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
             </Style>
-            
+
+            <Style x:Key="GroupItemListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}"  TargetType="{x:Type cex:ListViewItemEx}"/>
+
             <!-- DATA TEMPLATES -->
 
             <DataTemplate x:Key="GroupItemDataTemplate">
@@ -51,7 +53,11 @@
 
                     <materialDesign:PackIcon
                         Grid.Column="0"
-                        Kind="Folder"/>
+                        Height="28"
+                        Kind="Folder"
+                        Margin="0,0,4,0"
+                        VerticalAlignment="Center"
+                        Width="28"/>
 
                     <StackPanel
                         Grid.Column="1"
@@ -70,13 +76,13 @@
 
                     <StackPanel
                         Grid.Column="2"
-                        Orientation="Vertical">
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
 
                         <cex:ButtonEx
-                            Content="Edit"
-                            IconKind="Edit"/>
-
-                        <cex:ButtonEx
+                            Command="{Binding DataContext.RemoveGroupItemCommand,
+                                RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
+                            CommandParameter="{Binding}"
                             Content="Remove"
                             IconKind="Delete"/>
 
@@ -86,10 +92,48 @@
 
             <DataTemplate x:Key="GroupDataTemplate">
                 <cex:ExpanderEx
-                    Header="{Binding Name}"
+                    HeaderHorizontalContentAlignment="Stretch"
                     IconKind="Group">
 
+                    <cex:ExpanderEx.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                Grid.Column="0"
+                                Text="{Binding Name}"
+                                VerticalAlignment="Center"/>
+
+                            <StackPanel
+                                Grid.Column="2"
+                                Margin="0,8"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+
+                                <cex:ButtonEx
+                                    Command="{Binding DataContext.AddGroupItemCommand,
+                                        RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
+                                    CommandParameter="{Binding}"
+                                    Content="Add catalog"
+                                    IconKind="FolderAdd"/>
+
+                                <cex:ButtonEx
+                                    Command="{Binding DataContext.RemoveGroupConfigCommand,
+                                        RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
+                                    CommandParameter="{Binding}"
+                                    Content="Remove config"
+                                    IconKind="Delete"/>
+
+                            </StackPanel>
+                        </Grid>
+                    </cex:ExpanderEx.Header>
+
                     <cex:ListViewEx
+                        ItemContainerStyle="{StaticResource GroupItemListViewItemExStyle}"
                         ItemTemplate="{StaticResource GroupItemDataTemplate}"
                         ItemsSource="{Binding Items}"/>
 

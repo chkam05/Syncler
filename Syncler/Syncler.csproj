@@ -131,6 +131,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Themes\Base\ListViewExStyle.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Base\ScrollViewerExStyle.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -219,7 +223,9 @@
     <Compile Include="Utilities\ApplicationInstanceCommunicator.cs" />
     <Compile Include="Utilities\ColorsHelper.cs" />
     <Compile Include="Utilities\EnumHelper.cs" />
+    <Compile Include="Utilities\InternalMessagesHelper.cs" />
     <Compile Include="Utilities\ObjectHelper.cs" />
+    <Compile Include="Utilities\RelayCommand.cs" />
     <Compile Include="Windows\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
