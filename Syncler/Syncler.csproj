@@ -188,6 +188,8 @@
     <Compile Include="Data\Configuration\AppearanceThemeType.cs" />
     <Compile Include="Data\Configuration\Config.cs" />
     <Compile Include="Data\Configuration\ConfigManager.cs" />
+    <Compile Include="Data\Events\ErrorRelayEventArgs.cs" />
+    <Compile Include="Data\Events\ExtNotifyCollectionChangedEventArgs.cs" />
     <Compile Include="Data\Synchronisation\GroupConfig.cs" />
     <Compile Include="Data\Synchronisation\GroupItem.cs" />
     <Compile Include="Data\Synchronisation\SyncConfig.cs" />

@@ -1,6 +1,7 @@
 ﻿using chkam05.Tools.ControlsEx;
 using chkam05.Tools.ControlsEx.Data;
 using chkam05.Tools.ControlsEx.InternalMessages;
+using Syncler.Data.Events;
 using Syncler.Data.Synchronisation;
 using Syncler.InternalMessages;
 using Syncler.Pages.Base;
@@ -32,7 +33,6 @@ namespace Syncler.Pages
 
         public ICommand AddGroupItemCommand { get; set; }
         public ICommand RemoveGroupConfigCommand { get; set; }
-        public ICommand RemoveGroupItemCommand { get; set; }
 
 
         //  VARIABLES
@@ -107,13 +107,7 @@ namespace Syncler.Pages
                     {
                         string title = "Could not add group item.";
 
-                        var im = InternalMessageEx.CreateQuestionMessage(imContainer, title, errorMessage);
-
-                        im.OnClose += (se, ei) =>
-                        {
-                            if (ei.Result == InternalMessageResult.Ok)
-                                SyncManager.SyncConfig.Groups.Remove(groupConfig);
-                        };
+                        var im = InternalMessageEx.CreateErrorMessage(imContainer, title, errorMessage);
 
                         InternalMessagesHelper.ApplyVisualStyle(im);
 
@@ -122,8 +116,7 @@ namespace Syncler.Pages
                         return;
                     }
 
-                    groupConfig.Items.Add(new GroupItem() { Path = efs.FilePath });
-                    SyncManager.SaveSettings();
+                    groupConfig.AddGroupItem(new GroupItem() { Path = efs.FilePath }, true);
                 }
             };
 
@@ -158,6 +151,76 @@ namespace Syncler.Pages
         }
 
         #endregion INTERACTION METHODS
+
+        #region INTERACTIONS WITH PAGES MANAGER METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked by PagesManager when GoBack is called. </summary>
+        /// <param name="previousPage"> Page to return to. </param>
+        /// <returns> True - allow to go back; False - otherwise. </returns>
+        public override bool OnGoBackFromPage(BasePage previousPage)
+        {
+            if (!SyncManager.SaveData())
+                return false;
+
+            return true;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked by PagesManager when Load(another)Page is called. </summary>
+        /// <param name="pageToLoad"> Page to load. </param>
+        /// <returns> True - allow to load another page; False - otherwise. </returns>
+        public override bool OnGoForwardFromPage(BasePage pageToLoad)
+        {
+            if (!SyncManager.SaveData())
+                return false;
+
+            return true;
+        }
+
+        #endregion INTERACTIONS WITH PAGES MANAGER METHODS
+
+        #region SYNC MANAGER INTERACTION METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after raising error from sync manager. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Error Relay Event Arguments. </param>
+        protected void OnErrorRelayRaised(object sender, ErrorRelayEventArgs e)
+        {
+            string title = "Could not save data.";
+
+            var imContainer = App.GetIMContainer();
+            var im = InternalMessageEx.CreateErrorMessage(imContainer, title, e.ErrorMessage);
+
+            InternalMessagesHelper.ApplyVisualStyle(im);
+
+            imContainer.ShowMessage(im);
+        }
+
+        #endregion SYNC MANAGER INTERACTION METHODS
+
+        #region PAGE METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after loading page. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void BasePage_Loaded(object sender, RoutedEventArgs e)
+        {
+            SyncManager.ErrorRelay += OnErrorRelayRaised;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after unloading page. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void BasePage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            SyncManager.ErrorRelay -= OnErrorRelayRaised;
+        }
+
+        #endregion PAGE METHODS
 
     }
 }

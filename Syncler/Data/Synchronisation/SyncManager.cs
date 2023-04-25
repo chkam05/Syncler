@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Syncler.Attributes;
 using Syncler.Data.Configuration;
+using Syncler.Data.Events;
 using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
@@ -8,9 +9,11 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static Syncler.Delegates;
 
 namespace Syncler.Data.Synchronisation
 {
@@ -25,6 +28,7 @@ namespace Syncler.Data.Synchronisation
         //  EVENTS
 
         public event PropertyChangedEventHandler PropertyChanged;
+        public event ErrorRelayEventHandler ErrorRelay;
 
 
         //  VARIABLES
@@ -32,6 +36,7 @@ namespace Syncler.Data.Synchronisation
         private static SyncManager _instance;
         private static object _instanceLock = new object();
 
+        private bool _checkBeforeSave = false;
         private SyncConfig _syncConfig;
         private bool _loaded = false;
 
@@ -49,7 +54,7 @@ namespace Syncler.Data.Synchronisation
                         if (_instance == null)
                         {
                             _instance = new SyncManager();
-                            _instance.LoadSettings();
+                            _instance.LoadData();
                         }
                     }
                 }
@@ -65,6 +70,10 @@ namespace Syncler.Data.Synchronisation
             private set
             {
                 _syncConfig = value;
+
+                foreach (var groupConfig in _syncConfig.Groups)
+                    groupConfig.ItemsCollectionChanged += OnGroupItemsCollectionChanged;
+
                 _loaded = true;
                 UpdateConfigurationProperties();
             }
@@ -87,8 +96,8 @@ namespace Syncler.Data.Synchronisation
         #region LOAD & SAVE METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Load settings from json file. </summary>
-        public void LoadSettings()
+        /// <summary> Load data from json file. </summary>
+        public void LoadData()
         {
             string configDirPath = Path.Combine(
                 Environment.GetEnvironmentVariable("APPDATA"),
@@ -119,11 +128,52 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Save settings to json file. </summary>
-        public void SaveSettings()
+        /// <summary> Check data before save. </summary>
+        /// <param name="errorMessage"> Output error message. </param>
+        /// <returns> True - data can be save; False - otherwise. </returns>
+        private bool SaveDataCheck(out string errorMessage)
+        {
+            errorMessage = "";
+
+            if (_checkBeforeSave)
+            {
+                bool error = false;
+                StringBuilder errorMessageSb = new StringBuilder();
+
+                foreach (var groupConfig in SyncConfig.Groups)
+                {
+                    if (groupConfig.Items.Count < 2)
+                    {
+                        errorMessageSb.AppendLine($"Group \"{groupConfig.Name}\" contains less then 2.");
+                        error = true;
+                    }
+                }
+
+                _checkBeforeSave = error;
+
+                if (error)
+                {
+                    errorMessage = errorMessageSb.ToString();
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Save data to json file. </summary>
+        /// <returns> True - Data has been saved successfully; False - otherwise. </returns>
+        public bool SaveData()
         {
             if (SyncConfig != null)
             {
+                if (!SaveDataCheck(out string errorMessage))
+                {
+                    ErrorRelay?.Invoke(this, new ErrorRelayEventArgs(errorMessage, true));
+                    return false;
+                }
+
                 string configDirPath = Path.Combine(
                     Environment.GetEnvironmentVariable("APPDATA"),
                     ApplicationHelper.GetApplicationName());
@@ -135,7 +185,10 @@ namespace Syncler.Data.Synchronisation
                 string configFileContent = JsonConvert.SerializeObject(SyncConfig, Formatting.Indented);
 
                 File.WriteAllText(configFilePath, configFileContent);
+                return true;
             }
+
+            return false;
         }
 
         //  --------------------------------------------------------------------------------
@@ -144,12 +197,24 @@ namespace Syncler.Data.Synchronisation
         private void TriggerAutoSave(bool autosave)
         {
             if (autosave)
-                SaveSettings();
+                SaveData();
         }
 
         #endregion LOAD & SAVE METHODS
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after modifying group items collection. </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected void OnGroupItemsCollectionChanged(object sender, ExtNotifyCollectionChangedEventArgs e)
+        {
+            if (e.CurrentItems.Count < 2)
+                _checkBeforeSave = true;
+
+            TriggerAutoSave(e.AutoSave);
+        }
 
         //  --------------------------------------------------------------------------------
         /// <summary> Method for invoking PropertyChangedEventHandler event. </summary>
@@ -200,6 +265,7 @@ namespace Syncler.Data.Synchronisation
         /// <param name="autosave"> Save after add. </param>
         public void AddGroupConfig(GroupConfig groupConfig, bool autosave = false)
         {
+            groupConfig.ItemsCollectionChanged += OnGroupItemsCollectionChanged;
             SyncConfig.Groups.Add(groupConfig);
             TriggerAutoSave(autosave);
         }

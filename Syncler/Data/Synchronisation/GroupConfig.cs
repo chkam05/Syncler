@@ -1,14 +1,17 @@
 ﻿using Newtonsoft.Json;
+using Syncler.Data.Events;
 using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
+using static Syncler.Delegates;
 
 namespace Syncler.Data.Synchronisation
 {
@@ -24,10 +27,12 @@ namespace Syncler.Data.Synchronisation
         //  EVENTS
 
         public event PropertyChangedEventHandler PropertyChanged;
+        public event ExtNotifyCollectionChangedEventHandler ItemsCollectionChanged;
 
 
         //  VARIABLES
 
+        private bool _autoSave = false;
         private string _name;
         private ObservableCollection<GroupItem> _itemsCollection;
 
@@ -50,7 +55,7 @@ namespace Syncler.Data.Synchronisation
             set
             {
                 _itemsCollection = value;
-                _itemsCollection.CollectionChanged += (s, e) => { OnPropertyChanged(nameof(Items)); };
+                _itemsCollection.CollectionChanged += OnItemsCollectionChanged;
                 OnPropertyChanged(nameof(Items));
             }
         }
@@ -76,12 +81,46 @@ namespace Syncler.Data.Synchronisation
         #region DATA MANAGEMENT METHODS
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Add group item. </summary>
+        /// <param name="item"> Group item to add. </param>
+        /// <param name="autosave"> Trigger auto save. </param>
+        public void AddGroupItem(GroupItem item, bool autosave = false)
+        {
+            _autoSave = autosave;
+
+            Items.Add(item);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Check if items contains particular group item. </summary>
+        /// <param name="item"> Group item to check. </param>
+        /// <returns> True - items contains particular group item; False - otherwise. </returns>
+        public bool HasGroupItem(GroupItem item)
+        {
+            return Items.Contains(item);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Remove group item. </summary>
+        /// <param name="item"> Group item to remove. </param>
+        /// <param name="autosave"> Trigger auto save. </param>
+        public void RemoveGroupItem(GroupItem item, bool autosave = false)
+        {
+            _autoSave = autosave;
+
+            Items.Remove(item);
+        }
+
+        //  --------------------------------------------------------------------------------
         /// <summary> Method invoked after pressing remove group item button. </summary>
         /// <param name="item"> Group item object. </param>
         private void OnRemoveGroupItem(object item)
         {
-            if (item is GroupItem groupItem && Items.Contains(groupItem))
-                Items.Remove(groupItem);
+            if (item is GroupItem groupItem && HasGroupItem(groupItem))
+            {
+                _autoSave = true;
+                RemoveGroupItem(groupItem);
+            }
         }
 
         #endregion DATA MANAGEMENT METHODS
@@ -89,14 +128,26 @@ namespace Syncler.Data.Synchronisation
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Method invoekd after changing items collection. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Notify Collection Changed Event Arguments. </param>
+        protected void OnItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(Items));
+
+            var items = sender as ObservableCollection<GroupItem>;
+
+            if (ItemsCollectionChanged != null)
+                ItemsCollectionChanged(this, new ExtNotifyCollectionChangedEventArgs(e, items, true));
+        }
+
+        //  --------------------------------------------------------------------------------
         /// <summary> Method for invoking PropertyChangedEventHandler event. </summary>
         /// <param name="propertyName"> Changed property name. </param>
         protected void OnPropertyChanged(string propertyName)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
-
-            if (handler != null)
-                handler(this, new PropertyChangedEventArgs(propertyName));
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
 
         #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS

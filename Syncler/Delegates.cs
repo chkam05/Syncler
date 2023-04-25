@@ -1,4 +1,5 @@
 ﻿using Syncler.Components.MainMenu;
+using Syncler.Data.Events;
 using Syncler.Pages.Base;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,12 @@ namespace Syncler
 {
     public static class Delegates
     {
+
+        //  DATA
+
+        public delegate void ErrorRelayEventHandler(object sender, ErrorRelayEventArgs e);
+        public delegate void ExtNotifyCollectionChangedEventHandler(object sender, ExtNotifyCollectionChangedEventArgs e);
+
 
         //  MENUS
 
