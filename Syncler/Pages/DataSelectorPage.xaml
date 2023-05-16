@@ -86,7 +86,8 @@
                                 RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
                             CommandParameter="{Binding}"
                             Content="Remove"
-                            IconKind="Delete"/>
+                            IconKind="Delete"
+                            Click="RemoveSyncGroupItemButtonEx_Click"/>
 
                     </StackPanel>
                 </Grid>
@@ -117,18 +118,14 @@
                                 VerticalAlignment="Center">
 
                                 <cex:ButtonEx
-                                    Command="{Binding DataContext.AddGroupItemCommand,
-                                        RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
-                                    CommandParameter="{Binding}"
                                     Content="Add catalog"
-                                    IconKind="FolderAdd"/>
+                                    IconKind="FolderAdd"
+                                    Click="AddSyncGroupItemButtonEx_Click"/>
 
                                 <cex:ButtonEx
-                                    Command="{Binding DataContext.RemoveGroupConfigCommand,
-                                        RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
-                                    CommandParameter="{Binding}"
                                     Content="Remove config"
-                                    IconKind="Delete"/>
+                                    IconKind="Delete"
+                                    Click="RemoveSyncGroupButtonEx_Click"/>
 
                             </StackPanel>
                         </Grid>
@@ -154,7 +151,7 @@
                 <cex:ButtonEx
                     Content="Add group"
                     IconKind="Add"
-                    Click="AddGroupButtonEx_Click"/>
+                    Click="AddSyncGroupButtonEx_Click"/>
 
             </StackPanel>
         </Grid>
@@ -165,7 +162,7 @@
         <cex:ListViewEx
             ItemContainerStyle="{StaticResource GroupListViewItemExStyle}"
             ItemTemplate="{StaticResource GroupDataTemplate}"
-            ItemsSource="{Binding SyncManager.SyncConfig.Groups}"/>
+            ItemsSource="{Binding SyncGroupCollection}"/>
 
     </Grid>
     

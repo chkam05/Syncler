@@ -112,7 +112,8 @@ namespace Syncler.Pages.Base
         //  --------------------------------------------------------------------------------
         /// <summary> Go to previous page/pages by certain number of steps. </summary>
         /// <param name="backCount"> Number of steps back. </param>
-        public void GoBack(int backCount = 1)
+        /// <param name="force"> Force back to previous page. </param>
+        public void GoBack(int backCount = 1, bool force = false)
         {
             if (CanGoBack)
             {
@@ -124,7 +125,7 @@ namespace Syncler.Pages.Base
                 //  Get previous page from list to load into content frame.
                 var destPage = _loadedPages[destPageIndex];
 
-                if (currPage != null && !currPage.OnGoBackFromPage(destPage))
+                if (currPage != null && !force && !currPage.OnGoBackFromPage(destPage))
                     return;
 
                 //  Remove other pages loaded further.
@@ -146,7 +147,8 @@ namespace Syncler.Pages.Base
         /// <summary> Navigate to newly created page. </summary>
         /// <param name="page"> Page to load. </param>
         /// <param name="preventLoadSamePage"> Prevent to load page with the same type. </param>
-        public void LoadPage(BasePage page, bool preventLoadSamePage = true)
+        /// <param name="force"> Force load page. </param>
+        public void LoadPage(BasePage page, bool preventLoadSamePage = true, bool force = false)
         {
             var pageToLoad = page as Page;
 
@@ -157,7 +159,7 @@ namespace Syncler.Pages.Base
                 if (preventLoadSamePage && currPage != null && currPage.GetType() == page.GetType())
                     return;
 
-                if (currPage != null && !currPage.OnGoForwardFromPage(page))
+                if (currPage != null && !force && !currPage.OnGoForwardFromPage(page))
                     return;
 
                 //  Add page to history.
