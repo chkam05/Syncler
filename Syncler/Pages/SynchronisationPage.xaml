@@ -8,6 +8,7 @@
     xmlns:cfg="clr-namespace:Syncler.Data.Configuration"
     xmlns:conv="clr-namespace:Syncler.Converters"
     xmlns:local="clr-namespace:Syncler.Pages"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:pages="clr-namespace:Syncler.Pages.Base"
     mc:Ignorable="d"
     
@@ -43,7 +44,37 @@
                 <Setter Property="SelectedInactiveForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
             </Style>
 
+            <Style x:Key="SyncFileInfoGroupListViewItemExStyle" BasedOn="{StaticResource SyncThreadListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}"/>
+            
+            <Style x:Key="SyncFileInfoListViewItemExStyle" BasedOn="{StaticResource SyncThreadListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}"/>
+
             <!-- DATA TEMPLATES -->
+
+            <DataTemplate x:Key="SyncFileInfoGroupDataTemplate">
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel
+                        Grid.Row="0"
+                        Margin="8"
+                        Orientation="Horizontal">
+
+                        <materialDesign:PackIcon
+                            Kind="File"/>
+
+                        <TextBlock
+                            Margin="8,0,0,0"
+                            Text="{Binding FileName}"/>
+
+                    </StackPanel>
+
+                </Grid>
+            </DataTemplate>
 
             <DataTemplate x:Key="SyncThreadDataTemplate">
                 <cex:ExpanderEx
@@ -83,10 +114,10 @@
                         </Grid>
                     </cex:ExpanderEx.Header>
 
-                    <!--cex:ListViewEx
-                        ItemContainerStyle="{StaticResource GroupItemListViewItemExStyle}"
-                        ItemTemplate="{StaticResource GroupItemDataTemplate}"
-                        ItemsSource="{Binding Items}"/-->
+                    <cex:ListViewEx
+                        ItemContainerStyle="{StaticResource SyncFileInfoGroupListViewItemExStyle}"
+                        ItemTemplate="{StaticResource SyncFileInfoGroupDataTemplate}"
+                        ItemsSource="{Binding SyncFileGroups}"/>
 
                 </cex:ExpanderEx>
             </DataTemplate>
