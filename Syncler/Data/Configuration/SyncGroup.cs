@@ -25,6 +25,7 @@ namespace Syncler.Data.Configuration
         private string _id;
         private string _name;
         private ObservableCollection<SyncGroupItem> _itemsCollection;
+        private bool _autoSync = false;
 
 
         //  GETTERS & SETTERS
@@ -57,6 +58,16 @@ namespace Syncler.Data.Configuration
                 _itemsCollection = value;
                 _itemsCollection.CollectionChanged += OnItemsCollectionChanged;
                 OnPropertyChanged(nameof(Items));
+            }
+        }
+
+        public bool AutoSync
+        {
+            get => _autoSync;
+            set
+            {
+                _autoSync = value;
+                OnPropertyChanged(nameof(AutoSync));
             }
         }
 
@@ -97,6 +108,56 @@ namespace Syncler.Data.Configuration
         }
 
         #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS
+
+        #region VALIDATION METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Validate group config. </summary>
+        /// <param name="errorMessage"> Output error message. </param>
+        /// <param name="groupConfigNames"> Group config names already taken. </param>
+        /// <returns></returns>
+        public bool ValidateGroup(out string errorMessage, List<string> groupConfigNames = null)
+        {
+            if (string.IsNullOrEmpty(Name))
+            {
+                errorMessage = $"Group name cannot be null or empty.";
+                return false;
+            }
+
+            if (groupConfigNames != null && groupConfigNames.Any(g => g.ToLower() == Name.ToLower()))
+            {
+                errorMessage = $"Group name \"{Name}\" is already taken by another group.";
+                return false;
+            }
+
+            if (Items.Count < 2)
+            {
+                errorMessage = $"Group must contain at least two catalogs to sync files between them.";
+                return false;
+            }
+
+            errorMessage = null;
+            return true;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Validate group item path. </summary>
+        /// <param name="filePath"> Group item path. </param>
+        /// <param name="errorMessage"> Output error message. </param>
+        /// <returns> True - group item path is valid; False - otherwise. </returns>
+        public bool ValidateGroupItemPath(string filePath, out string errorMessage)
+        {
+            if (Items.Any(i => i.Path == filePath))
+            {
+                errorMessage = "Group already contains \"{Path.GetFileName(filePath)}\" catalog.";
+                return false;
+            }
+
+            errorMessage = null;
+            return true;
+        }
+
+        #endregion VALIDATION METHODS
 
     }
 }

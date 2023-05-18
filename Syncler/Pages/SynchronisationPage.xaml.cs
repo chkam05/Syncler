@@ -1,5 +1,6 @@
 ﻿using Syncler.Data.Synchronisation;
 using Syncler.Pages.Base;
+using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace Syncler.Pages
         {
             //  Initialize modules.
             SyncManager = SyncManager.Instance;
+            SyncManager.UpdateDispatcherHandler(new DispatcherHandler(this.Dispatcher));
 
             //  Initialize user interface.
             InitializeComponent();

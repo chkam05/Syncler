@@ -1,15 +1,14 @@
-﻿using Syncler.Attributes;
-using Syncler.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Syncler.Data.Synchronisation
 {
-    public class GroupItem : INotifyPropertyChanged
+    public class SyncFileInfo : INotifyPropertyChanged
     {
 
         //  EVENTS
@@ -19,25 +18,29 @@ namespace Syncler.Data.Synchronisation
 
         //  VARIABLES
 
-        private string _path;
+        private string _filePath;
+        private double _fileSize;
+        private string _checksum;
+        private DateTime _createdAt;
+        private DateTime _modifiedAt;
 
 
         //  GETTERS & SETTERS
 
-        public string Name
+        public string FilePath
         {
-            get => System.IO.Path.GetFileName(_path);
-        }
-
-        public string Path
-        {
-            get => _path;
+            get => _filePath;
             set
             {
-                _path = value;
-                OnPropertyChanged(nameof(Path));
-                OnPropertyChanged(nameof(Name));
+                _filePath = value;
+                OnPropertyChanged(nameof(FilePath));
+                OnPropertyChanged(nameof(FileName));
             }
+        }
+
+        public string FileName
+        {
+            get => Path.GetFileName(_filePath);
         }
 
 
@@ -46,8 +49,7 @@ namespace Syncler.Data.Synchronisation
         #region CLASS METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> GroupItem class constructor. </summary>
-        public GroupItem()
+        public SyncFileInfo()
         {
             //
         }
@@ -57,7 +59,7 @@ namespace Syncler.Data.Synchronisation
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method for invoking PropertyChangedEventHandler event. </summary>
+        /// <summary> Method for invoking PropertyChangedEventHandler external method. </summary>
         /// <param name="propertyName"> Changed property name. </param>
         protected void OnPropertyChanged(string propertyName)
         {

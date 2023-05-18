@@ -92,6 +92,17 @@ namespace Syncler.Data.Configuration
             }
         }
 
+        [ConfigPropertyUpdateAttrib]
+        public List<SyncGroup> SyncGroups
+        {
+            get => _config.SyncGroups;
+            set
+            {
+                _config.SyncGroups = value;
+                OnPropertyChanged(nameof(SyncGroups));
+            }
+        }
+
 
         #region Appearance
 

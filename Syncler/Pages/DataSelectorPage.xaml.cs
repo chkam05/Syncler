@@ -11,6 +11,8 @@ using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -24,7 +26,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using GroupItem = Syncler.Data.Synchronisation.GroupItem;
 
 namespace Syncler.Pages
 {
@@ -33,12 +34,11 @@ namespace Syncler.Pages
 
         //  VARIABLES
 
-        private bool _exitBack = false;
+        private bool _dataModified = false;
         private BasePage _exitPage = null;
         private bool _exitRequest = false;
 
         private ObservableCollection<SyncGroup> _syncGroupsCollection;
-        private bool _syncGroupsCollectionModified = false;
 
         public ConfigManager ConfigManager { get; private set; }
 
@@ -51,7 +51,7 @@ namespace Syncler.Pages
             set
             {
                 _syncGroupsCollection = value;
-                _syncGroupsCollection.CollectionChanged += (s, e) => { OnPropertyChanged(nameof(SyncGroupCollection)); };
+                _syncGroupsCollection.CollectionChanged += OnSyncGroupCollectionChanged;
                 OnPropertyChanged(nameof(SyncGroupCollection));
             }
         }
@@ -70,7 +70,7 @@ namespace Syncler.Pages
             ConfigManager = ConfigManager.Instance;
 
             //  Setup data.
-            SyncGroupCollection = new ObservableCollection<SyncGroup>(ConfigManager.Config.SyncGroups);
+            SetupData();
 
             //  Initialize user interface.
             InitializeComponent();
@@ -81,113 +81,115 @@ namespace Syncler.Pages
         #region INTERACTION METHODS
 
         //  --------------------------------------------------------------------------------
-        private void AddSyncGroupButtonEx_Click(object sender, RoutedEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        private void AddSyncGroupItemButtonEx_Click(object sender, RoutedEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        private void RemoveSyncGroupButtonEx_Click(object sender, RoutedEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        private void RemoveSyncGroupItemButtonEx_Click(object sender, RoutedEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after clicking add group button. </summary>
+        /// <summary> Method invoked after clicking add sync group button. </summary>
         /// <param name="sender"> Object that invoked method. </param>
         /// <param name="e"> Routed Event Arguments. </param>
-        private void AddGroupButtonEx_Click(object sender, RoutedEventArgs e)
+        private void AddSyncGroupButtonEx_Click(object sender, RoutedEventArgs e)
         {
-            /*var imContainer = App.GetIMContainer();
+            var imContainer = App.GetIMContainer();
             var im = new AddModifySyncGroupIM(imContainer);
 
-            im.GroupConfig = new GroupConfig();
-            im.GroupConfigNames = SyncManager.GetSyncGroupNames();
+            im.SyncGroup = new SyncGroup();
+            im.SyncGroupNames = SyncGroupCollection.Select(g => g.Name).ToList();
 
             im.OnClose += (s, es) =>
             {
                 if (es.Result == InternalMessageResult.Ok)
                 {
-                    SyncManager.AddGroupConfig(im.GroupConfig, true);
+                    SyncGroupCollection.Add(im.SyncGroup);
                 }
             };
 
-            imContainer.ShowMessage(im);*/
+            imContainer.ShowMessage(im);
         }
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after pressing add group item button. </summary>
-        /// <param name="item"> Group config object. </param>
-        private void OnAddGroupItem(object item)
+        /// <summary> Method invoked after clicking add sync group item button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void AddSyncGroupItemButtonEx_Click(object sender, RoutedEventArgs e)
         {
-            /*var imContainer = App.GetIMContainer();
-            var imFilesSelector = FilesSelectorInternalMessageEx.CreateSelectDirectoryInternalMessageEx(imContainer);
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncGroup);
 
-            imFilesSelector.AllowCreate = false;
-            imFilesSelector.InitialDirectory = imFilesSelector.CurrentDirectory;
-            imFilesSelector.OnClose += (s, efs) =>
+            if (source is SyncGroup syncGroup && SyncGroupCollection.Any(i => i.Id == syncGroup.Id))
             {
-                if (efs.Result == InternalMessageResult.Ok && Directory.Exists(efs.FilePath))
+                var imContainer = App.GetIMContainer();
+                var imFilesSelector = FilesSelectorInternalMessageEx.CreateSelectDirectoryInternalMessageEx(imContainer);
+
+                imFilesSelector.AllowCreate = false;
+                imFilesSelector.InitialDirectory = imFilesSelector.CurrentDirectory;
+                imFilesSelector.OnClose += (s, efs) =>
                 {
-                    var groupConfig = (GroupConfig)item;
-
-                    if (!groupConfig.ValidateGroupItemPath(efs.FilePath, out string errorMessage))
+                    if (efs.Result == InternalMessageResult.Ok && Directory.Exists(efs.FilePath))
                     {
-                        string title = "Could not add group item.";
+                        if (!syncGroup.ValidateGroupItemPath(efs.FilePath, out string errorMessage))
+                        {
+                            string title = "Could not add group item.";
 
-                        var im = InternalMessageEx.CreateErrorMessage(imContainer, title, errorMessage);
+                            var im = InternalMessageEx.CreateErrorMessage(imContainer, title, errorMessage);
 
-                        InternalMessagesHelper.ApplyVisualStyle(im);
+                            InternalMessagesHelper.ApplyVisualStyle(im);
 
-                        imContainer.ShowMessage(im);
+                            imContainer.ShowMessage(im);
 
-                        return;
+                            return;
+                        }
+
+                        syncGroup.Items.Add(new SyncGroupItem(syncGroup.Id) { Path = efs.FilePath });
+                        _dataModified = true;
                     }
+                };
 
-                    groupConfig.AddGroupItem(new GroupItem() { Path = efs.FilePath }, true);
-                }
-            };
-
-            InternalMessagesHelper.ApplyVisualStyle(imFilesSelector);
-
-            imContainer.ShowMessage(imFilesSelector);*/
+                InternalMessagesHelper.ApplyVisualStyle(imFilesSelector);
+                imContainer.ShowMessage(imFilesSelector);
+            }
         }
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after pressing remove group config button. </summary>
-        /// <param name="item"> Group config object. </param>
-        private void OnRemoveGroupConfig(object item)
+        /// <summary> Method invoked after clicking remove sync group button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void RemoveSyncGroupButtonEx_Click(object sender, RoutedEventArgs e)
         {
-            /*if (item is GroupConfig groupConfig && SyncManager.HasGroupConfig(groupConfig))
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncGroup);
+
+            if (source is SyncGroup syncGroup && SyncGroupCollection.Any(i => i.Id == syncGroup.Id))
             {
                 string title = "Remove group config";
-                string message = $"Do you want to remove \"{groupConfig.Name}\" group config?";
+                string message = $"Do you want to remove \"{syncGroup.Name}\" group config?";
 
                 var imContainer = App.GetIMContainer();
                 var im = InternalMessageEx.CreateQuestionMessage(imContainer, title, message);
 
-                im.OnClose += (s, e) =>
+                im.OnClose += (s, ec) =>
                 {
-                    if (e.Result == InternalMessageResult.Ok)
-                        SyncManager.RemoveGroupConfig(groupConfig, true);
+                    if (ec.Result == InternalMessageResult.Ok)
+                        SyncGroupCollection.Remove(syncGroup);
                 };
 
                 InternalMessagesHelper.ApplyVisualStyle(im);
-
                 imContainer.ShowMessage(im);
-            }*/
+            }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking remove sync group item button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void RemoveSyncGroupItemButtonEx_Click(object sender, RoutedEventArgs e)
+        {
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncGroupItem);
+
+            if (source is SyncGroupItem syncGroupItem)
+            {
+                var syncGroup = SyncGroupCollection.FirstOrDefault(s => s.Id == syncGroupItem.ParentId);
+
+                if (syncGroup != null && syncGroup.Items.Contains(syncGroupItem))
+                {
+                    syncGroup.Items.Remove(syncGroupItem);
+                    _dataModified = true;
+                }
+            }
         }
 
         #endregion INTERACTION METHODS
@@ -200,11 +202,22 @@ namespace Syncler.Pages
         /// <returns> True - allow to go back; False - otherwise. </returns>
         public override bool OnGoBackFromPage(BasePage previousPage)
         {
-            /*_exitBack = true;
-            _exitRequest = true;
+            if (_dataModified && !_exitRequest)
+            {
+                if (!ValidateGroupsBeforeSave(out string errorMessage))
+                {
+                    OnValidateGroupsBeforeSave(errorMessage);
+                    return false;
+                }
 
-            if (!SyncManager.SaveData())
-                return false;*/
+                SaveSyncGroups();
+            }
+
+            if (_exitRequest)
+            {
+                _exitPage = null;
+                _exitRequest = false;
+            }
 
             return true;
         }
@@ -215,66 +228,141 @@ namespace Syncler.Pages
         /// <returns> True - allow to load another page; False - otherwise. </returns>
         public override bool OnGoForwardFromPage(BasePage pageToLoad)
         {
-            /*_exitPage = pageToLoad;
-            _exitRequest = true;
+            if (_dataModified && !_exitRequest)
+            {
+                if (!ValidateGroupsBeforeSave(out string errorMessage))
+                {
+                    OnValidateGroupsBeforeSave(errorMessage, pageToLoad);
+                    return false;
+                }
 
-            if (!SyncManager.SaveData())
-                return false;*/
+                SaveSyncGroups();
+            }
+
+            if (_exitRequest)
+            {
+                _exitPage = null;
+                _exitRequest = false;
+            }
 
             return true;
         }
 
         #endregion INTERACTIONS WITH PAGES MANAGER METHODS
 
-        #region SYNC MANAGER INTERACTION METHODS
+        #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after raising error from sync manager. </summary>
+        /// <summary> Method invoked after modifying sync groups collection. </summary>
         /// <param name="sender"> Object that invoked method. </param>
-        /// <param name="e"> Error Relay Event Arguments. </param>
-        protected void OnErrorRelayRaised(object sender, ErrorRelayEventArgs e)
+        /// <param name="e"> Notify Collection Changed Event Arguments. </param>
+        private void OnSyncGroupCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            string title = "Could not save data.";
-            string message = _exitRequest
-                ? e.ErrorMessage + Environment.NewLine + "Do you want to abandon changes and exit?"
-                : e.ErrorMessage;
+            _dataModified = true;
+            OnPropertyChanged(nameof(SyncGroupCollection));
+        }
 
-            var imContainer = App.GetIMContainer();
-            var im = _exitRequest
-                ? InternalMessageEx.CreateQuestionMessage(imContainer, title, message)
-                : InternalMessageEx.CreateErrorMessage(imContainer, title, message);
+        #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
-            if (_exitRequest)
+        #region SETUP & SAVE METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Save sync groups. </summary>
+        private void SaveSyncGroups()
+        {
+            if (_dataModified)
             {
-                im.OnClose += (s, ie) =>
-                {
-                    _exitRequest = false;
-
-                    if (ie.Result == InternalMessageResult.Yes)
-                    {
-                        if (_exitBack)
-                        {
-                            _pagesManager.GoBack(force: true);
-                            _exitBack = false;
-                            return;
-                        }
-
-                        if (_exitPage != null)
-                        {
-                            _pagesManager.LoadPage(_exitPage, force: true);
-                            _exitPage = null;
-                            return;
-                        }
-                    }
-                };
+                ConfigManager.SyncGroups = SyncGroupCollection.ToList();
+                ConfigManager.SaveSettings();
             }
 
-            InternalMessagesHelper.ApplyVisualStyle(im);
+            _dataModified = false;
+        }
 
+        //  --------------------------------------------------------------------------------
+        /// <summary> Setup data containers. </summary>
+        private void SetupData()
+        {
+            SyncGroupCollection = new ObservableCollection<SyncGroup>(ConfigManager.SyncGroups);
+            _dataModified = false;
+        }
+
+        #endregion SETUP & SAVE METHODS
+
+        #region SYNC MANAGER VALIDATION METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Validate sync groups data before save. </summary>
+        /// <param name="errorMessage"> Output error message. </param>
+        /// <returns> True - validation successfull; False - otherwise. </returns>
+        protected bool ValidateGroupsBeforeSave(out string errorMessage)
+        {
+            StringBuilder sb = new StringBuilder();
+            bool result = true;
+
+            var syncGroupNamesWithoutItems = SyncGroupCollection.Where(g => g.Items.Count < 2);
+            var syncGroupNamesWithDuplicatedItems = SyncGroupCollection.Where(g => 
+            {
+                var groups = g.Items.GroupBy(i => i.Path);
+
+                if (groups.Any(i => i.Count() > 1))
+                    return true;
+
+                return false;
+            });
+
+            if (syncGroupNamesWithoutItems.Any())
+            {
+                foreach (var item in syncGroupNamesWithoutItems)
+                    sb.Append($"{item.Name} contains less than one catalog.");
+
+                result = false;
+            }
+
+            if (syncGroupNamesWithDuplicatedItems.Any())
+            {
+                foreach (var item in syncGroupNamesWithDuplicatedItems)
+                    sb.Append($"{item.Name} contains duplicated catalog.");
+
+                result = false;
+            }
+
+            errorMessage = sb.ToString();
+            return result;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after failed groups data validation. </summary>
+        /// <param name="errorMessage"> Validation error message. </param>
+        /// <param name="pageToLoad"> Page to load. </param>
+        protected void OnValidateGroupsBeforeSave(string errorMessage, BasePage pageToLoad = null)
+        {
+            string title = "Could not save data.";
+            string message = "Data validation faled. Do you want to abandon changes and exit?"
+                + Environment.NewLine + errorMessage;
+
+            var imContainer = App.GetIMContainer();
+            var im = InternalMessageEx.CreateQuestionMessage(imContainer, title, message);
+
+            im.OnClose += (s, ie) =>
+            {
+                if (ie.Result == InternalMessageResult.Yes)
+                {
+                    _exitPage = pageToLoad;
+                    _exitRequest = true;
+
+                    if (_exitPage != null)
+                        _pagesManager.LoadPage(_exitPage, force: true);
+                    else
+                        _pagesManager.GoBack(force: true);
+                }
+            };
+
+            InternalMessagesHelper.ApplyVisualStyle(im);
             imContainer.ShowMessage(im);
         }
 
-        #endregion SYNC MANAGER INTERACTION METHODS
+        #endregion SYNC MANAGER VALIDATION METHODS
 
         #region PAGE METHODS
 

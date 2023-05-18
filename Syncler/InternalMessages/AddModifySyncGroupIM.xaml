@@ -49,11 +49,11 @@
                 <Setter Property="MinWidth" Value="192"/>
             </Style>
 
-            <Style x:Key="GroupItemListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}"  TargetType="{x:Type cex:ListViewItemEx}"/>
+            <Style x:Key="SyncGroupListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}"  TargetType="{x:Type cex:ListViewItemEx}"/>
 
             <!-- DATA TEMPLATES -->
 
-            <DataTemplate x:Key="GroupItemDataTemplate">
+            <DataTemplate x:Key="SyncGroupDataTemplate">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -90,11 +90,9 @@
                         VerticalAlignment="Center">
 
                         <cex:ButtonEx
-                            Command="{Binding DataContext.RemoveGroupItemCommand,
-                                RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
-                            CommandParameter="{Binding}"
                             Content="Remove"
-                            IconKind="Delete"/>
+                            IconKind="Delete"
+                            Click="RemoveCatalogButtonEx_Click"/>
 
                     </StackPanel>
                 </Grid>
@@ -139,7 +137,7 @@
 
                     <components:SettingsOptionControl.Content>
                         <cex:TextBoxEx
-                            Text="{Binding GroupConfig.Name}"/>
+                            Text="{Binding SyncGroup.Name}"/>
                     </components:SettingsOptionControl.Content>
 
                 </components:SettingsOptionControl>
@@ -194,9 +192,9 @@
                     </cex:ExpanderEx.Header>
 
                     <cex:ListViewEx
-                        ItemContainerStyle="{StaticResource GroupItemListViewItemExStyle}"
-                        ItemTemplate="{StaticResource GroupItemDataTemplate}"
-                        ItemsSource="{Binding GroupConfig.Items}"/>
+                        ItemContainerStyle="{StaticResource SyncGroupListViewItemExStyle}"
+                        ItemTemplate="{StaticResource SyncGroupDataTemplate}"
+                        ItemsSource="{Binding SyncGroup.Items}"/>
 
                 </cex:ExpanderEx>
 

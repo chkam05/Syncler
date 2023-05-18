@@ -1,6 +1,7 @@
 ﻿using chkam05.Tools.ControlsEx;
 using chkam05.Tools.ControlsEx.Data;
 using chkam05.Tools.ControlsEx.InternalMessages;
+using Syncler.Data.Configuration;
 using Syncler.Data.Synchronisation;
 using Syncler.Utilities;
 using System;
@@ -15,14 +16,11 @@ namespace Syncler.InternalMessages
     public partial class AddModifySyncGroupIM : StandardInternalMessageEx
     {
 
-        
-
-
         //  VARIABLES
 
         private string _errorMessage = null;
-        private GroupConfig _groupConfig;
-        private List<string> _groupConfigNames;
+        private SyncGroup _syncGroup;
+        private List<string> _syncGroupNames;
 
 
         //  GETTERS & SETTERS
@@ -37,25 +35,25 @@ namespace Syncler.InternalMessages
             }
         }
 
-        public GroupConfig GroupConfig
+        public SyncGroup SyncGroup
         {
-            get => _groupConfig;
+            get => _syncGroup;
             set
             {
-                _groupConfig = value ?? new GroupConfig();
-                OnPropertyChanged(nameof(GroupConfig));
+                _syncGroup = value ?? new SyncGroup();
+                OnPropertyChanged(nameof(SyncGroup));
 
                 Title = value != null ? "Edit sync group" : "Add sync group";
             }
         }
 
-        public List<string> GroupConfigNames
+        public List<string> SyncGroupNames
         {
-            get => _groupConfigNames;
+            get => _syncGroupNames;
             set
             {
-                _groupConfigNames = value;
-                OnPropertyChanged(nameof(GroupConfigNames));
+                _syncGroupNames = value;
+                OnPropertyChanged(nameof(SyncGroupNames));
             }
         }
 
@@ -98,19 +96,30 @@ namespace Syncler.InternalMessages
             {
                 if (efs.Result == InternalMessageResult.Ok && Directory.Exists(efs.FilePath))
                 {
-                    if (!GroupConfig.ValidateGroupItemPath(efs.FilePath, out string errorMessage))
+                    if (!SyncGroup.ValidateGroupItemPath(efs.FilePath, out string errorMessage))
                     {
                         ErrorMessage = errorMessage;
                         return;
                     }
 
-                    GroupConfig.Items.Add(new GroupItem() { Path = efs.FilePath });
+                    SyncGroup.Items.Add(new SyncGroupItem(SyncGroup.Id) { Path = efs.FilePath });
                 }
             };
 
             InternalMessagesHelper.ApplyVisualStyle(imFilesSelector);
-
             _parentContainer.ShowMessage(imFilesSelector);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking remove catalog button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void RemoveCatalogButtonEx_Click(object sender, RoutedEventArgs e)
+        {
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncGroupItem);
+
+            if (source is SyncGroupItem syncGroupItem && SyncGroup.Items.Contains(syncGroupItem))
+                SyncGroup.Items.Remove(syncGroupItem);
         }
 
         //  --------------------------------------------------------------------------------
@@ -119,7 +128,7 @@ namespace Syncler.InternalMessages
         /// <param name="e"> Routed Event Arguments. </param>
         protected override void OnOkClick(object sender, RoutedEventArgs e)
         {
-            if (!GroupConfig.ValidateGroup(out string errorMessage, GroupConfigNames))
+            if (!SyncGroup.ValidateGroup(out string errorMessage, SyncGroupNames))
             {
                 ErrorMessage = errorMessage;
                 return;

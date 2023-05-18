@@ -20,25 +20,19 @@ namespace Syncler.Data.Synchronisation
     public class SyncManager : INotifyPropertyChanged
     {
 
-        //  CONST
-
-        private const string DATA_FILE_NAME = "data.json";
-
-
         //  EVENTS
 
         public event PropertyChangedEventHandler PropertyChanged;
-        public event ErrorRelayEventHandler ErrorRelay;
 
 
         //  VARIABLES
 
         private static SyncManager _instance;
         private static object _instanceLock = new object();
+        private DispatcherHandler _dispatcherHandler;
+        private ObservableCollection<SyncThread> _syncThreads;
 
-        private bool _checkBeforeSave = false;
-        private SyncConfig _syncConfig;
-        private bool _loaded = false;
+        public ConfigManager ConfigManager { get; private set; }
 
 
         //  GETTERS & SETTERS
@@ -63,19 +57,24 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
-        [ConfigPropertyUpdateAttrib(AllowUpdate = false)]
-        public SyncConfig SyncConfig
+        public DispatcherHandler DispatcherHandler
         {
-            get => _syncConfig;
+            get => _dispatcherHandler;
             private set
             {
-                _syncConfig = value;
+                UpdateDispatcherHandler(value);
+                OnPropertyChanged(nameof(DispatcherHandler));
+            }
+        }
 
-                foreach (var groupConfig in _syncConfig.Groups)
-                    groupConfig.ItemsCollectionChanged += OnGroupItemsCollectionChanged;
-
-                _loaded = true;
-                UpdateConfigurationProperties();
+        public ObservableCollection<SyncThread> SyncThreads
+        {
+            get => _syncThreads;
+            set
+            {
+                _syncThreads = value;
+                _syncThreads.CollectionChanged += (s, e) => { OnPropertyChanged(nameof(SyncThreads)); };
+                OnPropertyChanged(nameof(SyncThreads));
             }
         }
 
@@ -88,132 +87,81 @@ namespace Syncler.Data.Synchronisation
         /// <summary> Private SyncManager instance class constructor. </summary>
         private SyncManager()
         {
-            //
+            //  Initialize modules.
+            ConfigManager = ConfigManager.Instance;
+            ConfigManager.PropertyChanged += OnConfigUpdate;
         }
 
         #endregion CLASS METHODS
 
-        #region LOAD & SAVE METHODS
+        #region DISPATCHER MANAGEMENT METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Load data from json file. </summary>
-        public void LoadData()
+        /// <summary> Update dispatcher handler. </summary>
+        /// <param name="dispatcherHandler"> New dispatcher handler. </param>
+        public void UpdateDispatcherHandler(DispatcherHandler dispatcherHandler)
         {
-            string configDirPath = Path.Combine(
-                Environment.GetEnvironmentVariable("APPDATA"),
-                ApplicationHelper.GetApplicationName());
+            DispatcherHandler = dispatcherHandler;
 
-            if (!Directory.Exists(configDirPath))
-                Directory.CreateDirectory(configDirPath);
+            foreach (var syncThread in SyncThreads)
+                syncThread.UpdateDispatcherHandler(dispatcherHandler);
+        }
 
-            string configFilePath = Path.Combine(configDirPath, DATA_FILE_NAME);
+        #endregion DISPATCHER MANAGEMENT METHODS
 
-            if (!File.Exists(configFilePath))
-                File.WriteAllText(configFilePath, string.Empty);
+        #region LOAD & SAVE DATA
 
-            string configFileContent = File.ReadAllText(configFilePath);
+        //  --------------------------------------------------------------------------------
+        /// <summary> Create thread from sync groups. </summary>
+        private void LoadData()
+        {
+            SyncThreads = new ObservableCollection<SyncThread>();
 
-            if (!string.IsNullOrEmpty(configFileContent))
+            foreach (var syncGroup in ConfigManager.SyncGroups)
+                SyncThreads.Add(new SyncThread(syncGroup));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update threads after changing sync groups data. </summary>
+        private void UpdateData()
+        {
+            List<string> syncGroupIds = new List<string>();
+
+            //  Add new thread or update existing one.
+            foreach (var syncGroup in ConfigManager.SyncGroups)
             {
-                SyncConfig syncConfig = JsonConvert.DeserializeObject<SyncConfig>(configFileContent);
+                var syncThread = SyncThreads.FirstOrDefault(s => s.SyncGroup.Id == syncGroup.Id);
 
-                if (syncConfig != null)
-                {
-                    SyncConfig = syncConfig;
-                    return;
-                }
+                if (syncThread == null)
+                    SyncThreads.Add(new SyncThread(syncGroup));
+                else
+                    syncThread.UpdateSyncGroup(syncGroup);
+
+                syncGroupIds.Add(syncGroup.Id);
             }
 
-            SyncConfig = new SyncConfig();
-        }
+            var oldSyncThreads = SyncThreads.Where(s => !syncGroupIds.Contains(s.SyncGroup.Id));
 
-        //  --------------------------------------------------------------------------------
-        /// <summary> Check data before save. </summary>
-        /// <param name="errorMessage"> Output error message. </param>
-        /// <returns> True - data can be save; False - otherwise. </returns>
-        private bool SaveDataCheck(out string errorMessage)
-        {
-            errorMessage = "";
-
-            if (_checkBeforeSave)
+            //  Remove old threads.
+            if (oldSyncThreads.Any())
             {
-                bool error = false;
-                StringBuilder errorMessageSb = new StringBuilder();
-
-                foreach (var groupConfig in SyncConfig.Groups)
-                {
-                    if (groupConfig.Items.Count < 2)
-                    {
-                        errorMessageSb.AppendLine($"Group \"{groupConfig.Name}\" contains less then 2.");
-                        error = true;
-                    }
-                }
-
-                _checkBeforeSave = error;
-
-                if (error)
-                {
-                    errorMessage = errorMessageSb.ToString();
-                    return false;
-                }
+                foreach (var oldSyncThread in oldSyncThreads)
+                    SyncThreads.Remove(oldSyncThread);
             }
-
-            return true;
         }
 
-        //  --------------------------------------------------------------------------------
-        /// <summary> Save data to json file. </summary>
-        /// <returns> True - Data has been saved successfully; False - otherwise. </returns>
-        public bool SaveData()
-        {
-            if (SyncConfig != null)
-            {
-                if (!SaveDataCheck(out string errorMessage))
-                {
-                    ErrorRelay?.Invoke(this, new ErrorRelayEventArgs(errorMessage, true));
-                    return false;
-                }
-
-                string configDirPath = Path.Combine(
-                    Environment.GetEnvironmentVariable("APPDATA"),
-                    ApplicationHelper.GetApplicationName());
-
-                if (!Directory.Exists(configDirPath))
-                    Directory.CreateDirectory(configDirPath);
-
-                string configFilePath = Path.Combine(configDirPath, DATA_FILE_NAME);
-                string configFileContent = JsonConvert.SerializeObject(SyncConfig, Formatting.Indented);
-
-                File.WriteAllText(configFilePath, configFileContent);
-                return true;
-            }
-
-            return false;
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Trigger auto save. </summary>
-        /// <param name="autosave"> Autosave. </param>
-        private void TriggerAutoSave(bool autosave)
-        {
-            if (autosave)
-                SaveData();
-        }
-
-        #endregion LOAD & SAVE METHODS
+        #endregion LOAD & SAVE DATA
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after modifying group items collection. </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        protected void OnGroupItemsCollectionChanged(object sender, ExtNotifyCollectionChangedEventArgs e)
+        /// <summary> Method invoked after updating config in config manager. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Property Changed Event Arguments. </param>
+        protected void OnConfigUpdate(object sender, PropertyChangedEventArgs e)
         {
-            if (e.CurrentItems.Count < 2)
-                _checkBeforeSave = true;
-
-            TriggerAutoSave(e.AutoSave);
+            if (e.PropertyName == nameof(ConfigManager.SyncGroups))
+                UpdateData();
         }
 
         //  --------------------------------------------------------------------------------
@@ -227,77 +175,7 @@ namespace Syncler.Data.Synchronisation
                 handler(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        //  --------------------------------------------------------------------------------
-        /// <summary> Update configuration properties after loading configuration from file. </summary>
-        private void UpdateConfigurationProperties()
-        {
-            if (_loaded)
-            {
-                var thisType = this.GetType();
-                var properties = ObjectHelper.GetObjectProperties(this).Where(p => p.CanWrite);
-
-                foreach (var propInfo in properties)
-                {
-                    var property = thisType.GetProperty(propInfo.Name);
-
-                    if (property != null)
-                    {
-                        if (ObjectHelper.HasAttribute(property, typeof(ConfigPropertyUpdateAttrib)))
-                        {
-                            var attribs = ObjectHelper.GetAttribute<ConfigPropertyUpdateAttrib>(property);
-                            if (attribs != null && attribs.Any(a => a.AllowUpdate == false))
-                                continue;
-                        }
-
-                        OnPropertyChanged(property.Name);
-                    }
-                }
-            }
-        }
-
         #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS
-
-        #region CONFIG MANAGEMENT METHODS
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Add group config. </summary>
-        /// <param name="groupConfig"> Group config to add. </param>
-        /// <param name="autosave"> Save after add. </param>
-        public void AddGroupConfig(GroupConfig groupConfig, bool autosave = false)
-        {
-            groupConfig.ItemsCollectionChanged += OnGroupItemsCollectionChanged;
-            SyncConfig.Groups.Add(groupConfig);
-            TriggerAutoSave(autosave);
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Get list of sync groups names. </summary>
-        /// <returns> Sync groups names. </returns>
-        public List<string> GetSyncGroupNames()
-        {
-            return SyncConfig.Groups.Select(g => g.Name).ToList();
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Check if group config exists in configuration. </summary>
-        /// <param name="groupConfig"> Group config. </param>
-        /// <returns> True - group config exists in configuration; False - otherwise. </returns>
-        public bool HasGroupConfig(GroupConfig groupConfig)
-        {
-            return SyncConfig.Groups.Contains(groupConfig);
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Remove group config. </summary>
-        /// <param name="groupConfig"> Group config to remove. </param>
-        /// <param name="autosave"> Save after remove. </param>
-        public void RemoveGroupConfig(GroupConfig groupConfig, bool autosave = false)
-        {
-            SyncConfig.Groups.Remove(groupConfig);
-            TriggerAutoSave(autosave);
-        }
-
-        #endregion CONFIG MANAGEMENT METHODS
 
     }
 }
