@@ -101,7 +101,7 @@ namespace Syncler.Data.Synchronisation
         /// <param name="dispatcherHandler"> New dispatcher handler. </param>
         public void UpdateDispatcherHandler(DispatcherHandler dispatcherHandler)
         {
-            DispatcherHandler = dispatcherHandler;
+            _dispatcherHandler = dispatcherHandler;
 
             foreach (var syncThread in SyncThreads)
                 syncThread.UpdateDispatcherHandler(dispatcherHandler);

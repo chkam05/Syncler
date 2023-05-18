@@ -1,4 +1,6 @@
-﻿using Syncler.Data.Synchronisation;
+﻿using chkam05.Tools.ControlsEx;
+using Syncler.Data.Configuration;
+using Syncler.Data.Synchronisation;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
 using System;
@@ -44,6 +46,21 @@ namespace Syncler.Pages
         }
 
         #endregion CLASS METHODS
+
+        #region INTERACTION METHODS
+
+        //  --------------------------------------------------------------------------------
+        private void ScanFilesButtonEx_Click(object sender, RoutedEventArgs e)
+        {
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncThread);
+
+            if (source is SyncThread syncThread)
+            {
+                syncThread.Scan();
+            }
+        }
+
+        #endregion INTERACTION METHODS
 
     }
 }

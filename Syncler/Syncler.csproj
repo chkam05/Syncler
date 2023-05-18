@@ -183,6 +183,7 @@
     <Compile Include="Converters\BoolVisibilityConverter.cs" />
     <Compile Include="Converters\Settings\AppearanceThemeTypeNameConverter.cs" />
     <Compile Include="Converters\SolidColorBrushOpacityConverter.cs" />
+    <Compile Include="Converters\SyncStateNameConverter.cs" />
     <Compile Include="Data\Configuration\AppearanceColor.cs" />
     <Compile Include="Data\Configuration\AppearanceConfig.cs" />
     <Compile Include="Data\Configuration\AppearanceThemeType.cs" />
@@ -192,8 +193,11 @@
     <Compile Include="Data\Configuration\SyncGroupItem.cs" />
     <Compile Include="Data\Events\ErrorRelayEventArgs.cs" />
     <Compile Include="Data\Events\ExtNotifyCollectionChangedEventArgs.cs" />
+    <Compile Include="Data\Synchronisation\SyncFileInfo.cs" />
+    <Compile Include="Data\Synchronisation\SyncFileInfoGroup.cs" />
     <Compile Include="Data\Synchronisation\SyncManager.cs" />
     <Compile Include="Data\Synchronisation\SyncState.cs" />
+    <Compile Include="Data\Synchronisation\SyncTempFileInfo.cs" />
     <Compile Include="Data\Synchronisation\SyncThread.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="InternalMessages\AddModifySyncGroupIM.xaml.cs">

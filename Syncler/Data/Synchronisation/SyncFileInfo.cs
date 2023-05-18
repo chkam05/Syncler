@@ -11,6 +11,12 @@ namespace Syncler.Data.Synchronisation
     public class SyncFileInfo : INotifyPropertyChanged
     {
 
+        //  CONST
+
+        private static readonly int FILE_SIZE_SCALE = 1024;
+        private static readonly string[] FILE_SIZE_SUFFIXES = { "B", "KB", "MB", "GB", "TB", "PB" };
+
+
         //  EVENTS
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -19,7 +25,7 @@ namespace Syncler.Data.Synchronisation
         //  VARIABLES
 
         private string _filePath;
-        private double _fileSize;
+        private long _fileSize = 0;
         private string _checksum;
         private DateTime _createdAt;
         private DateTime _modifiedAt;
@@ -43,12 +49,70 @@ namespace Syncler.Data.Synchronisation
             get => Path.GetFileName(_filePath);
         }
 
+        public long FileSize
+        {
+            get => _fileSize;
+            set
+            {
+                _fileSize = value;
+                OnPropertyChanged(nameof(FileSize));
+                OnPropertyChanged(nameof(FileSizeStr));
+            }
+        }
+
+        public string FileSizeStr
+        {
+            get
+            {
+                if (_fileSize <= 0)
+                {
+                    return "0 " + FILE_SIZE_SUFFIXES[0];
+                }
+
+                int magnitude = (int)Math.Log(_fileSize, FILE_SIZE_SCALE);
+                double adjustedSize = (double)_fileSize / Math.Pow(FILE_SIZE_SCALE, magnitude);
+
+                return $"{adjustedSize:0.##} {FILE_SIZE_SUFFIXES[magnitude]}";
+            }
+        }
+
+        public string Checksum
+        {
+            get => _checksum;
+            set
+            {
+                _checksum = value;
+                OnPropertyChanged(nameof(Checksum));
+            }
+        }
+
+        public DateTime CreatedAt
+        {
+            get => _createdAt;
+            set
+            {
+                _createdAt = value;
+                OnPropertyChanged(nameof(CreatedAt));
+            }
+        }
+
+        public DateTime ModifiedAt
+        {
+            get => _modifiedAt;
+            set
+            {
+                _modifiedAt = value;
+                OnPropertyChanged(nameof(ModifiedAt));
+            }
+        }
+
 
         //  METHODS
 
         #region CLASS METHODS
 
         //  --------------------------------------------------------------------------------
+        /// <summary> SyncFileInfo class constructor. </summary>
         public SyncFileInfo()
         {
             //

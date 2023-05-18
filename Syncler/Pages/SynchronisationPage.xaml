@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:cex="clr-namespace:chkam05.Tools.ControlsEx;assembly=chkam05.Tools.ControlsEx"
     xmlns:cfg="clr-namespace:Syncler.Data.Configuration"
+    xmlns:conv="clr-namespace:Syncler.Converters"
     xmlns:local="clr-namespace:Syncler.Pages"
     xmlns:pages="clr-namespace:Syncler.Pages.Base"
     mc:Ignorable="d"
@@ -20,11 +21,85 @@
         <ResourceDictionary>
 
             <x:Static x:Key="ConfigManager" Member="cfg:ConfigManager.Instance" />
+            
+            <!-- CONVERTERS -->
+
+            <conv:SyncStateNameConverter x:Key="SyncStateNameConverter"/>
+
+            <!-- STYLES -->
+
+            <Style x:Key="SyncThreadListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
+                <Setter Property="MouseOverBackground" Value="Transparent"/>
+                <Setter Property="MouseOverBorderBrush" Value="Transparent"/>
+                <Setter Property="MouseOverForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
+                <Setter Property="SelectedBackground" Value="Transparent"/>
+                <Setter Property="SelectedBorderBrush" Value="Transparent"/>
+                <Setter Property="SelectedForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
+                <Setter Property="SelectedInactiveBackground" Value="Transparent"/>
+                <Setter Property="SelectedInactiveBorderBrush" Value="Transparent"/>
+                <Setter Property="SelectedInactiveForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
+            </Style>
+
+            <!-- DATA TEMPLATES -->
+
+            <DataTemplate x:Key="SyncThreadDataTemplate">
+                <cex:ExpanderEx
+                    HeaderHorizontalContentAlignment="Stretch"
+                    IconKind="Group">
+
+                    <cex:ExpanderEx.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                Grid.Column="0"
+                                Text="{Binding SyncGroup.Name, Mode=OneWay}"
+                                VerticalAlignment="Center"/>
+
+                            <StackPanel
+                                Grid.Column="2"
+                                Margin="0,8"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+
+                                <TextBlock
+                                    Text="{Binding SyncState, Converter={StaticResource SyncStateNameConverter}}"
+                                    VerticalAlignment="Center"/>
+
+                                <cex:ButtonEx
+                                    Content="Scan/Stop"
+                                    IconKind="FileSearch"
+                                    Margin="8,0,0,0"
+                                    Click="ScanFilesButtonEx_Click"/>
+
+                            </StackPanel>
+                        </Grid>
+                    </cex:ExpanderEx.Header>
+
+                    <!--cex:ListViewEx
+                        ItemContainerStyle="{StaticResource GroupItemListViewItemExStyle}"
+                        ItemTemplate="{StaticResource GroupItemDataTemplate}"
+                        ItemsSource="{Binding Items}"/-->
+
+                </cex:ExpanderEx>
+            </DataTemplate>
 
         </ResourceDictionary>
     </pages:BasePage.Resources>
 
     <Grid>
+
+        <cex:ListViewEx
+            ItemContainerStyle="{StaticResource SyncThreadListViewItemExStyle}"
+            ItemTemplate="{StaticResource SyncThreadDataTemplate}"
+            ItemsSource="{Binding SyncManager.SyncThreads}"/>
 
     </Grid>
 

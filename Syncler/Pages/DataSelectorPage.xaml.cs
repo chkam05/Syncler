@@ -163,7 +163,7 @@ namespace Syncler.Pages
 
                 im.OnClose += (s, ec) =>
                 {
-                    if (ec.Result == InternalMessageResult.Ok)
+                    if (ec.Result == InternalMessageResult.Yes)
                         SyncGroupCollection.Remove(syncGroup);
                 };
 
