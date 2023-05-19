@@ -30,6 +30,9 @@ namespace Syncler.Data.Synchronisation
         private DateTime _createdAt;
         private DateTime _modifiedAt;
 
+        private string _diffMessage = string.Empty;
+        private bool _selected = false;
+
 
         //  GETTERS & SETTERS
 
@@ -103,6 +106,27 @@ namespace Syncler.Data.Synchronisation
             {
                 _modifiedAt = value;
                 OnPropertyChanged(nameof(ModifiedAt));
+            }
+        }
+
+
+        public string DiffMessage
+        {
+            get => _diffMessage;
+            set
+            {
+                _diffMessage = value;
+                OnPropertyChanged(nameof(DiffMessage));
+            }
+        }
+
+        public bool Selected
+        {
+            get => _selected;
+            set
+            {
+                _selected = value;
+                OnPropertyChanged(nameof(Selected));
             }
         }
 

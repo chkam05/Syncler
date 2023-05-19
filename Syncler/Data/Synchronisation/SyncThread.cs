@@ -124,79 +124,33 @@ namespace Syncler.Data.Synchronisation
         #region FILES MANAGEMENT METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Scan files for differences. </summary>
-        public void Scan()
+        /// <summary> Add sync file group to sync file groups collection.</summary>
+        /// <param name="syncFileInfoGroup"> Sync file group to add. </param>
+        private void AddSyncFileGroup(SyncFileInfoGroup syncFileInfoGroup)
         {
-            Stop();
+            var action = new Action(() => SyncFileGroups.Add(syncFileInfoGroup));
 
-            _bwScanner = new BackgroundWorker();
-            _bwScanner.WorkerReportsProgress = true;
-            _bwScanner.WorkerSupportsCancellation = true;
-            _bwScanner.DoWork += Scan;
-            _bwScanner.ProgressChanged += OnScanProgress;
-            _bwScanner.RunWorkerCompleted += OnScanComplete;
-
-            SyncState = SyncState.SCANNING;
-            _bwScanner.RunWorkerAsync();
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Scan files for differences - work. </summary>
-        /// <param name="sender"> Object that invoked method. </param>
-        /// <param name="e"> Do Work Event Arguments. </param>
-        private void Scan(object sender, DoWorkEventArgs e)
+        /// <summary> Clear sync file groups collection. </summary>
+        private void ClearSyncFileGroups()
         {
-            var clearState = _dispatherHandler?.TryInvoke(() => { SyncFileGroups.Clear(); }) ?? false;
-
-            if (!clearState)
-                SyncFileGroups.Clear();
-
-            try
+            var action = new Action(() =>
             {
-                List<SyncTempFileInfo> files = new List<SyncTempFileInfo>();
-                var paths = SyncGroup.Items.Select(i => i.Path);
-
-                //  Scan files and directories.
-                foreach (var path in paths)
-                    ScanCatalog(path, path, files);
-
-                //  Group files and directories.
-                var grouppedFiles = files.GroupBy(f => new { f.FileName, f.SubCatalog });
-
-                foreach (var fileGroup in grouppedFiles)
+                if (SyncFileGroups == null)
                 {
-                    var syncFileInfoGroup = new SyncFileInfoGroup()
-                    {
-                        Catalog = fileGroup.Key.SubCatalog,
-                        FileName = fileGroup.Key.FileName
-                    };
-
-                    var syncFiles = fileGroup.Select(f =>
-                    {
-                        var fileInfo = new FileInfo(f.FilePath);
-
-                        return new SyncFileInfo()
-                        {
-                            FilePath = f.FilePath,
-                            CreatedAt = fileInfo.CreationTime,
-                            ModifiedAt = fileInfo.LastWriteTime,
-                            Checksum = CalculateChecksum(fileInfo),
-                            FileSize = fileInfo.Length,
-                        };
-                    });
-
-                    syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
-
-                    var addState = _dispatherHandler?.TryInvoke(() => { SyncFileGroups.Add(syncFileInfoGroup); }) ?? false;
-
-                    if (!addState)
-                        SyncFileGroups.Add(syncFileInfoGroup);
+                    SyncFileGroups = new ObservableCollection<SyncFileInfoGroup>();
+                    return;
                 }
-            }
-            catch (Exception)
-            {
-                SyncState = SyncState.STOPPED_SCANNING;
-            }
+
+                SyncFileGroups.Clear();
+            });
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         //  --------------------------------------------------------------------------------
@@ -209,7 +163,8 @@ namespace Syncler.Data.Synchronisation
             foreach (var filePath in Directory.GetFiles(path))
             {
                 FileInfo fileInfo = new FileInfo(filePath);
-                string subCatalog = path.Replace(basePath + "\\", string.Empty);
+                string subCatalog = path.Replace(basePath, string.Empty)
+                    .Replace("\\", "/");
 
                 result.Add(new SyncTempFileInfo(filePath, fileInfo, subCatalog));
             }
@@ -218,68 +173,6 @@ namespace Syncler.Data.Synchronisation
             {
                 ScanCatalog(basePath, directoryPath, result);
             }
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after finishing scanning files for diffrences. </summary>
-        /// <param name="sender"> Object that invoked method. </param>
-        /// <param name="e"> Run Worker Completed Event Arguments. </param>
-        private void OnScanComplete(object sender, RunWorkerCompletedEventArgs e)
-        {
-            SyncState = e.Cancelled ? SyncState.STOPPED_SCANNING : SyncState.NONE;
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after reporting in scanning files for diffrences process. </summary>
-        /// <param name="sender"> Object that invoked method. </param>
-        /// <param name="e"> Progress Changed Event Arguments. </param>
-        private void OnScanProgress(object sender, ProgressChangedEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        public void Sync()
-        {
-            Stop();
-
-            _bwSyncler = new BackgroundWorker();
-            _bwSyncler.WorkerReportsProgress = true;
-            _bwSyncler.WorkerSupportsCancellation = true;
-            _bwSyncler.DoWork += Sync;
-            _bwSyncler.ProgressChanged += OnSyncProgress;
-            _bwSyncler.RunWorkerCompleted += OnSyncComplete;
-
-            SyncState = SyncState.SYNCING;
-            _bwSyncler.RunWorkerAsync();
-        }
-
-        //  --------------------------------------------------------------------------------
-        private void Sync(object sender, DoWorkEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        private void OnSyncComplete(object sender, RunWorkerCompletedEventArgs e)
-        {
-            SyncState = e.Cancelled ? SyncState.STOPPED_SYNCING : SyncState.NONE;
-        }
-
-        //  --------------------------------------------------------------------------------
-        private void OnSyncProgress(object sender, ProgressChangedEventArgs e)
-        {
-            //
-        }
-
-        //  --------------------------------------------------------------------------------
-        public void Stop()
-        {
-            if (_bwScanner != null && _bwScanner.IsBusy)
-                _bwScanner.CancelAsync();
-
-            else if (_bwSyncler != null && _bwSyncler.IsBusy)
-                _bwSyncler.CancelAsync();
         }
 
         #endregion FILES MANAGEMENT METHODS
@@ -317,6 +210,147 @@ namespace Syncler.Data.Synchronisation
         public bool IsWorking() => IsScanning() || IsWorking();
 
         #endregion STATE METHODS
+
+        #region THREADS METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Scan files for differences. </summary>
+        public void Scan()
+        {
+            Stop();
+
+            _bwScanner = new BackgroundWorker();
+            _bwScanner.WorkerReportsProgress = true;
+            _bwScanner.WorkerSupportsCancellation = true;
+            _bwScanner.DoWork += Scan;
+            _bwScanner.ProgressChanged += OnScanProgress;
+            _bwScanner.RunWorkerCompleted += OnScanComplete;
+
+            SyncState = SyncState.SCANNING;
+            _bwScanner.RunWorkerAsync();
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Scan files for differences - work. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Do Work Event Arguments. </param>
+        private void Scan(object sender, DoWorkEventArgs e)
+        {
+            ClearSyncFileGroups();
+
+            try
+            {
+                List<SyncTempFileInfo> files = new List<SyncTempFileInfo>();
+                var paths = SyncGroup.Items.Select(i => i.Path);
+
+                //  Scan files and directories.
+                foreach (var path in paths)
+                    ScanCatalog(path, path, files);
+
+                //  Group files and directories.
+                var grouppedFiles = files.GroupBy(f => new { f.FileName, f.SubCatalog });
+                int counter = 0;
+
+                foreach (var fileGroup in grouppedFiles)
+                {
+                    counter++;
+
+                    var syncFileInfoGroup = new SyncFileInfoGroup()
+                    {
+                        Catalog = fileGroup.Key.SubCatalog,
+                        FileName = fileGroup.Key.FileName
+                    };
+
+                    var syncFiles = fileGroup.Select(f =>
+                    {
+                        var fileInfo = new FileInfo(f.FilePath);
+
+                        return new SyncFileInfo()
+                        {
+                            FilePath = f.FilePath,
+                            CreatedAt = fileInfo.CreationTime,
+                            ModifiedAt = fileInfo.LastWriteTime,
+                            Checksum = CalculateChecksum(fileInfo),
+                            FileSize = fileInfo.Length,
+                        };
+                    });
+
+                    syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
+                    _bwScanner.ReportProgress(100 * counter / grouppedFiles.Count(), syncFileInfoGroup);
+                }
+            }
+            catch (Exception)
+            {
+                SyncState = SyncState.STOPPED_SCANNING;
+            }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after reporting in scanning files for diffrences process. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Progress Changed Event Arguments. </param>
+        private void OnScanProgress(object sender, ProgressChangedEventArgs e)
+        {
+            var syncFileInfoGroup = e.UserState as SyncFileInfoGroup;
+
+            if (syncFileInfoGroup != null)
+                AddSyncFileGroup(syncFileInfoGroup);
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after finishing scanning files for diffrences. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Run Worker Completed Event Arguments. </param>
+        private void OnScanComplete(object sender, RunWorkerCompletedEventArgs e)
+        {
+            SyncState = e.Cancelled ? SyncState.STOPPED_SCANNING : SyncState.NONE;
+        }
+
+        //  --------------------------------------------------------------------------------
+        public void Sync()
+        {
+            Stop();
+
+            _bwSyncler = new BackgroundWorker();
+            _bwSyncler.WorkerReportsProgress = true;
+            _bwSyncler.WorkerSupportsCancellation = true;
+            _bwSyncler.DoWork += Sync;
+            _bwSyncler.ProgressChanged += OnSyncProgress;
+            _bwSyncler.RunWorkerCompleted += OnSyncComplete;
+
+            SyncState = SyncState.SYNCING;
+            _bwSyncler.RunWorkerAsync();
+        }
+
+        //  --------------------------------------------------------------------------------
+        private void Sync(object sender, DoWorkEventArgs e)
+        {
+            //
+        }
+
+        //  --------------------------------------------------------------------------------
+        private void OnSyncProgress(object sender, ProgressChangedEventArgs e)
+        {
+            //
+        }
+
+        //  --------------------------------------------------------------------------------
+        private void OnSyncComplete(object sender, RunWorkerCompletedEventArgs e)
+        {
+            SyncState = e.Cancelled ? SyncState.STOPPED_SYNCING : SyncState.NONE;
+        }
+
+        //  --------------------------------------------------------------------------------
+        public void Stop()
+        {
+            if (_bwScanner != null && _bwScanner.IsBusy)
+                _bwScanner.CancelAsync();
+
+            else if (_bwSyncler != null && _bwSyncler.IsBusy)
+                _bwSyncler.CancelAsync();
+        }
+
+        #endregion THREADS METHODS
 
         #region UTILITY METHODS
 

@@ -183,6 +183,7 @@
     <Compile Include="Converters\BoolVisibilityConverter.cs" />
     <Compile Include="Converters\Settings\AppearanceThemeTypeNameConverter.cs" />
     <Compile Include="Converters\SolidColorBrushOpacityConverter.cs" />
+    <Compile Include="Converters\StringDefaultValueConverter.cs" />
     <Compile Include="Converters\SyncStateNameConverter.cs" />
     <Compile Include="Data\Configuration\AppearanceColor.cs" />
     <Compile Include="Data\Configuration\AppearanceConfig.cs" />

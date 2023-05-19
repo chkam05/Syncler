@@ -20,12 +20,16 @@
 
     <pages:BasePage.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Themes/Generic.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
 
             <x:Static x:Key="ConfigManager" Member="cfg:ConfigManager.Instance" />
             
             <!-- CONVERTERS -->
 
             <conv:SyncStateNameConverter x:Key="SyncStateNameConverter"/>
+            <conv:StringDefaultValueConverter x:Key="StringDefaultValueConverter"/>
 
             <!-- STYLES -->
 
@@ -50,6 +54,12 @@
 
             <!-- DATA TEMPLATES -->
 
+            <DataTemplate x:Key="SyncFileInfoDataTemplate">
+                <Grid>
+                    
+                </Grid>
+            </DataTemplate>
+
             <DataTemplate x:Key="SyncFileInfoGroupDataTemplate">
                 <Grid>
 
@@ -65,13 +75,30 @@
                         Orientation="Horizontal">
 
                         <materialDesign:PackIcon
-                            Kind="File"/>
+                            Height="28"
+                            Kind="File"
+                            VerticalAlignment="Center"
+                            Width="28"/>
 
-                        <TextBlock
+                        <StackPanel
                             Margin="8,0,0,0"
-                            Text="{Binding FileName}"/>
+                            Orientation="Vertical">
+
+                            <TextBlock
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Margin="8,0,0,0"
+                                Text="{Binding FileName}"/>
+
+                            <TextBlock
+                                Margin="8,0,0,0"
+                                Text="{Binding Catalog, Mode=OneWay, Converter={StaticResource StringDefaultValueConverter},ConverterParameter=/}"/>
+
+                        </StackPanel>
 
                     </StackPanel>
+                    
+                    
 
                 </Grid>
             </DataTemplate>
@@ -126,12 +153,15 @@
     </pages:BasePage.Resources>
 
     <Grid>
+        <cex:ScrollViewerEx>
 
-        <cex:ListViewEx
-            ItemContainerStyle="{StaticResource SyncThreadListViewItemExStyle}"
-            ItemTemplate="{StaticResource SyncThreadDataTemplate}"
-            ItemsSource="{Binding SyncManager.SyncThreads}"/>
+            <cex:ListViewEx
+                ItemContainerStyle="{StaticResource SyncThreadListViewItemExStyle}"
+                ItemTemplate="{StaticResource SyncThreadDataTemplate}"
+                ItemsSource="{Binding SyncManager.SyncThreads}"
+                Margin="0"/>
 
+        </cex:ScrollViewerEx>
     </Grid>
 
 </pages:BasePage>
