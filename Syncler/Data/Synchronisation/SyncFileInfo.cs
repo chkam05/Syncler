@@ -24,6 +24,7 @@ namespace Syncler.Data.Synchronisation
 
         //  VARIABLES
 
+        private string _basePath;
         private string _filePath;
         private long _fileSize = 0;
         private string _checksum;
@@ -35,6 +36,16 @@ namespace Syncler.Data.Synchronisation
 
 
         //  GETTERS & SETTERS
+
+        public string BasePath
+        {
+            get => _basePath;
+            set
+            {
+                _basePath = value;
+                OnPropertyChanged(nameof(BasePath));
+            }
+        }
 
         public string FilePath
         {
@@ -96,7 +107,13 @@ namespace Syncler.Data.Synchronisation
             {
                 _createdAt = value;
                 OnPropertyChanged(nameof(CreatedAt));
+                OnPropertyChanged(nameof(CreatedAtStr));
             }
+        }
+
+        public string CreatedAtStr
+        {
+            get => _createdAt.ToString("yyyy.MM.dd HH:mm:ss");
         }
 
         public DateTime ModifiedAt
@@ -106,9 +123,14 @@ namespace Syncler.Data.Synchronisation
             {
                 _modifiedAt = value;
                 OnPropertyChanged(nameof(ModifiedAt));
+                OnPropertyChanged(nameof(ModifiedAtStr));
             }
         }
 
+        public string ModifiedAtStr
+        {
+            get => _createdAt.ToString("yyyy.MM.dd HH:mm:ss");
+        }
 
         public string DiffMessage
         {
@@ -143,6 +165,19 @@ namespace Syncler.Data.Synchronisation
         }
 
         #endregion CLASS METHODS
+
+        #region MESSAGEM METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Append diffrence message. </summary>
+        /// <param name="message"> Message. </param>
+        public void AppendDiffMessage(string message)
+        {
+            DiffMessage = !string.IsNullOrEmpty(DiffMessage) ?
+                DiffMessage + Environment.NewLine + message : message;
+        }
+
+        #endregion MESSAGE METHODS
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 

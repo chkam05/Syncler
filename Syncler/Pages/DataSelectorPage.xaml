@@ -15,7 +15,7 @@
     d:DesignWidth="800"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     IconKind="Folders"
-    Title="Data selector"
+    Title="Sync directories selector"
     Loaded="BasePage_Loaded"
     Unloaded="BasePage_Unloaded">
 

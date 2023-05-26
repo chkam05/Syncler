@@ -42,6 +42,12 @@
                     Click="AppearanceSettingsOptionButtonControl_Click"/>
 
                 <components:SettingsOptionButtonControl
+                    IconKind="Folders"
+                    Title="Sync directories"
+                    Description="Configure directories groups to sync data between them."
+                    Click="SyncDirectoriesSettingsOptionButtonControl_Click"/>
+
+                <components:SettingsOptionButtonControl
                     IconKind="InfoOutline"
                     Title="About"
                     Description="Informations about application."

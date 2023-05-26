@@ -264,9 +264,14 @@ namespace Syncler.Data.Synchronisation
                     var syncFiles = fileGroup.Select(f =>
                     {
                         var fileInfo = new FileInfo(f.FilePath);
+                        var basePath = Path.GetDirectoryName(f.FilePath);
+
+                        if (!string.IsNullOrEmpty(f.SubCatalog))
+                            basePath = basePath.Replace(f.SubCatalog.Replace("/", "\\"), string.Empty);
 
                         return new SyncFileInfo()
                         {
+                            BasePath = Path.GetFileName(basePath),
                             FilePath = f.FilePath,
                             CreatedAt = fileInfo.CreationTime,
                             ModifiedAt = fileInfo.LastWriteTime,
@@ -276,7 +281,9 @@ namespace Syncler.Data.Synchronisation
                     });
 
                     syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
-                    _bwScanner.ReportProgress(100 * counter / grouppedFiles.Count(), syncFileInfoGroup);
+
+                    if (!syncFileInfoGroup.ValidateFiles(SyncGroup, SyncValidationConfig.Default))
+                        _bwScanner.ReportProgress(100 * counter / grouppedFiles.Count(), syncFileInfoGroup);
                 }
             }
             catch (Exception)

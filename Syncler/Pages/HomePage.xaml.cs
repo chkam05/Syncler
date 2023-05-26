@@ -29,7 +29,6 @@ namespace Syncler.Pages
             get => new List<MainMenuItem>()
             {
                 new MainMenuItem("Home", PackIconKind.Home, OnHomeMenuItemSelect),
-                new MainMenuItem("Data selector", PackIconKind.Folders, OnDataSelectorMenuItemSelect),
                 new MainMenuItem("Synchronisation", PackIconKind.Sync, OnSynchronisationMenuItemSelect),
                 new MainMenuItem("Settings", PackIconKind.Gear, OnSettingsMenuItemSelect),
             };
@@ -60,15 +59,6 @@ namespace Syncler.Pages
         private void OnHomeMenuItemSelect(object sender, EventArgs e)
         {
             _pagesManager.LoadPage(new HomePage(_pagesManager));
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after selecting home menu item. </summary>
-        /// <param name="sender"> Object that invoked method. </param>
-        /// <param name="e"> Event Arguments. </param>
-        private void OnDataSelectorMenuItemSelect(object sender, EventArgs e)
-        {
-            _pagesManager.LoadPage(new DataSelectorPage(_pagesManager));
         }
 
         //  --------------------------------------------------------------------------------

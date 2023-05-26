@@ -28,6 +28,7 @@ namespace Syncler.Pages.Settings
             get => new List<MainMenuItem>()
             {
                 new MainMenuItem("Appearance", PackIconKind.Palette, OnAppearanceMenuItemSelect),
+                new MainMenuItem("Sync Directories", PackIconKind.Folders, OnSyncDirectoriesMenuItemSelect),
                 new MainMenuItem("About", PackIconKind.InfoOutline, OnAboutMenuItemSelect),
             };
         }
@@ -68,6 +69,15 @@ namespace Syncler.Pages.Settings
             _pagesManager.LoadPage(new InfoSettingsPage(_pagesManager));
         }
 
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking Sync directories settings option button control. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void SyncDirectoriesSettingsOptionButtonControl_Click(object sender, RoutedEventArgs e)
+        {
+            _pagesManager.LoadPage(new DataSelectorPage(_pagesManager));
+        }
+
         #endregion INTERACTION METHODS
 
         #region MENU ITEMS METHODS
@@ -88,6 +98,15 @@ namespace Syncler.Pages.Settings
         private void OnAboutMenuItemSelect(object sender, EventArgs e)
         {
             _pagesManager.LoadPage(new InfoSettingsPage(_pagesManager));
+        }
+
+        //  --------------------------------------------------------------------------------
+        //// <summary> Method invoked after sync directories settings menu item. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Event Arguments. </param>
+        private void OnSyncDirectoriesMenuItemSelect(object sender, EventArgs e)
+        {
+            _pagesManager.LoadPage(new DataSelectorPage(_pagesManager));
         }
 
         #endregion MENU ITEMS METHODS

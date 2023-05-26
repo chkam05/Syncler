@@ -184,6 +184,7 @@
     <Compile Include="Converters\Settings\AppearanceThemeTypeNameConverter.cs" />
     <Compile Include="Converters\SolidColorBrushOpacityConverter.cs" />
     <Compile Include="Converters\StringDefaultValueConverter.cs" />
+    <Compile Include="Converters\StringNullVisibilityConverter.cs" />
     <Compile Include="Converters\SyncStateNameConverter.cs" />
     <Compile Include="Data\Configuration\AppearanceColor.cs" />
     <Compile Include="Data\Configuration\AppearanceConfig.cs" />
@@ -200,6 +201,7 @@
     <Compile Include="Data\Synchronisation\SyncState.cs" />
     <Compile Include="Data\Synchronisation\SyncTempFileInfo.cs" />
     <Compile Include="Data\Synchronisation\SyncThread.cs" />
+    <Compile Include="Data\Synchronisation\SyncValidationConfig.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="InternalMessages\AddModifySyncGroupIM.xaml.cs">
       <DependentUpon>AddModifySyncGroupIM.xaml</DependentUpon>

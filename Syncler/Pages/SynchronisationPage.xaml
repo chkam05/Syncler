@@ -30,6 +30,7 @@
 
             <conv:SyncStateNameConverter x:Key="SyncStateNameConverter"/>
             <conv:StringDefaultValueConverter x:Key="StringDefaultValueConverter"/>
+            <conv:StringNullVisibilityConverter x:Key="StringNullVisibilityConverter"/>
 
             <!-- STYLES -->
 
@@ -48,7 +49,12 @@
                 <Setter Property="SelectedInactiveForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
             </Style>
 
-            <Style x:Key="SyncFileInfoGroupListViewItemExStyle" BasedOn="{StaticResource SyncThreadListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}"/>
+            <Style x:Key="SyncFileInfoGroupListViewItemExStyle" BasedOn="{StaticResource SyncThreadListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}">
+                <Setter Property="Background" Value="{Binding AppearanceThemeShadeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="MouseOverBackground" Value="{Binding AppearanceThemeShadeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="SelectedBackground" Value="{Binding AppearanceThemeShadeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="SelectedInactiveBackground" Value="{Binding AppearanceThemeShadeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+            </Style>
             
             <Style x:Key="SyncFileInfoListViewItemExStyle" BasedOn="{StaticResource SyncThreadListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}"/>
 
@@ -57,6 +63,78 @@
             <DataTemplate x:Key="SyncFileInfoDataTemplate">
                 <Grid>
                     
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <cex:CheckBoxEx
+                        Grid.Column="0"
+                        IsChecked="{Binding Selected}"
+                        VerticalAlignment="Center"/>
+
+                    <StackPanel
+                        Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Orientation="Vertical"
+                        VerticalAlignment="Center">
+
+                        <TextBlock
+                            FontSize="14"
+                            Text="{Binding BasePath}"/>
+
+                        <TextBlock
+                            Foreground="Red"
+                            Text="{Binding DiffMessage}"
+                            Visibility="{Binding DiffMessage, Mode=OneWay, Converter={StaticResource StringNullVisibilityConverter}}"/>
+
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="2"
+                        Margin="16,0,0,0"
+                        Orientation="Vertical"
+                        VerticalAlignment="Center">
+
+                        <TextBlock
+                            Text="Created at:"/>
+
+                        <TextBlock
+                            Text="{Binding CreatedAtStr}"/>
+
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="3"
+                        Margin="16,0,0,0"
+                        Orientation="Vertical"
+                        VerticalAlignment="Center">
+
+                        <TextBlock
+                            Text="Modified at:"/>
+
+                        <TextBlock
+                            Text="{Binding ModifiedAtStr}"/>
+
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="4"
+                        Margin="16,0,0,0"
+                        Orientation="Vertical"
+                        VerticalAlignment="Center">
+
+                        <TextBlock
+                            Text="File size:"/>
+
+                        <TextBlock
+                            Text="{Binding FileSizeStr}"/>
+
+                    </StackPanel>
+
                 </Grid>
             </DataTemplate>
 
@@ -71,7 +149,7 @@
 
                     <StackPanel
                         Grid.Row="0"
-                        Margin="8"
+                        Margin="8,8,8,0"
                         Orientation="Horizontal">
 
                         <materialDesign:PackIcon
@@ -97,8 +175,34 @@
                         </StackPanel>
 
                     </StackPanel>
-                    
-                    
+
+                    <cex:ListViewEx
+                        Grid.Row="1"
+                        ItemContainerStyle="{StaticResource SyncFileInfoListViewItemExStyle}"
+                        ItemTemplate="{StaticResource SyncFileInfoDataTemplate}"
+                        ItemsSource="{Binding Files}"/>
+
+                    <Grid
+                        Grid.Row="2"
+                        Margin="8,0,8,8">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel
+                            Grid.Column="0">
+
+                            <TextBlock
+                                Foreground="Red"
+                                Text="{Binding DiffMessage}"
+                                Visibility="{Binding DiffMessage, Mode=OneWay, Converter={StaticResource StringNullVisibilityConverter}}"/>
+
+                        </StackPanel>
+
+                    </Grid>
 
                 </Grid>
             </DataTemplate>
@@ -153,7 +257,8 @@
     </pages:BasePage.Resources>
 
     <Grid>
-        <cex:ScrollViewerEx>
+        <cex:ScrollViewerEx
+            Padding="8">
 
             <cex:ListViewEx
                 ItemContainerStyle="{StaticResource SyncThreadListViewItemExStyle}"
