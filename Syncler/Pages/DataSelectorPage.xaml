@@ -82,9 +82,6 @@
                         VerticalAlignment="Center">
 
                         <cex:ButtonEx
-                            Command="{Binding DataContext.RemoveGroupItemCommand,
-                                RelativeSource={RelativeSource AncestorType={x:Type cex:ListViewEx}}}"
-                            CommandParameter="{Binding}"
                             Content="Remove"
                             IconKind="Delete"
                             Click="RemoveSyncGroupItemButtonEx_Click"/>

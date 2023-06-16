@@ -3,20 +3,10 @@ using Syncler.Data.Configuration;
 using Syncler.Data.Synchronisation;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Syncler.Pages
 {
@@ -50,13 +40,51 @@ namespace Syncler.Pages
         #region INTERACTION METHODS
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking scan/stop button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
         private void ScanFilesButtonEx_Click(object sender, RoutedEventArgs e)
         {
             var source = ((e.Source as ButtonEx)?.DataContext as SyncThread);
 
             if (source is SyncThread syncThread)
             {
-                syncThread.Scan();
+                switch (syncThread.SyncState)
+                {
+                    case SyncState.NONE:
+                    case SyncState.STOPPED_SCANNING:
+                    case SyncState.STOPPED_SYNCING:
+                        syncThread.Scan();
+                        break;
+
+                    case SyncState.SCANNING:
+                    case SyncState.SYNCING:
+                        syncThread.Stop();
+                        break;
+                }
+            }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after double clicking on SyncFileInfos ListViewEx. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Mouse Button Event Arguments. </param>
+        private void SyncFileInfoListViewEx_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListViewEx listViewEx)
+            {
+                if (listViewEx.SelectedItem is SyncFileInfo syncFileInfo)
+                {
+                    if (File.Exists(syncFileInfo.FilePath))
+                    {
+                        string args = string.Format("/e, /select, \"{0}\"", syncFileInfo.FilePath);
+
+                        ProcessStartInfo info = new ProcessStartInfo();
+                        info.FileName = "explorer";
+                        info.Arguments = args;
+                        Process.Start(info);
+                    }
+                }
             }
         }
 

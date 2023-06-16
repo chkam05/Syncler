@@ -27,6 +27,7 @@ namespace Syncler.Data.Synchronisation
         private BackgroundWorker _bwSyncler;
         private DispatcherHandler _dispatherHandler;
         private SyncState _syncState = SyncState.NONE;
+        private string _syncStateMessage = string.Empty;
         private SyncGroup _syncGroup;
         private ObservableCollection<SyncFileInfoGroup> _syncFileGroups;
 
@@ -40,6 +41,67 @@ namespace Syncler.Data.Synchronisation
             {
                 _syncState = value;
                 OnPropertyChanged(nameof(SyncState));
+                OnPropertyChanged(nameof(ScanButtonLabel));
+
+                switch (value)
+                {
+                    case SyncState.NONE:
+                        SyncStateMessage = "Ready.";
+                        break;
+
+                    case SyncState.SCANNING:
+                        SyncStateMessage = "Scanning...";
+                        break;
+
+                    case SyncState.SYNCING:
+                        SyncStateMessage = "Synchronising...";
+                        break;
+
+                    case SyncState.STOPPED_SCANNING:
+                        SyncStateMessage = "Scanning stopped.";
+                        break;
+
+                    case SyncState.STOPPED_SYNCING:
+                        SyncStateMessage = "Sync stopped.";
+                        break;
+                }
+            }
+        }
+
+        public string SyncStateMessage
+        {
+            get => _syncStateMessage;
+            set
+            {
+                _syncStateMessage = value;
+                OnPropertyChanged(nameof(SyncStateMessage));
+            }
+        }
+
+        public string ScanButtonLabel
+        {
+            get
+            {
+                bool anyScannedFile = SyncFileGroups != null && SyncFileGroups.Any();
+
+                switch (SyncState)
+                {
+                    case SyncState.NONE:
+                        return anyScannedFile ? "Rescan" : "Scan";
+
+                    case SyncState.SCANNING:
+                        return "Stop scan";
+
+                    case SyncState.SYNCING:
+                        return "Stop sync";
+
+                    case SyncState.STOPPED_SCANNING:
+                    case SyncState.STOPPED_SYNCING:
+                        return "Rescan";
+
+                    default:
+                        return anyScannedFile ? "Rescan" : "Scan";
+                }
             }
         }
 
@@ -135,6 +197,17 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Update message displayed during files comparing. </summary>
+        /// <param name="percent"> Current compared files count. </param>
+        private void AddSyncFileMessageUpdate(int percent)
+        {
+            var action = new Action(() => SyncStateMessage = $"Comparing files {percent}% ...");
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
+        }
+
+        //  --------------------------------------------------------------------------------
         /// <summary> Clear sync file groups collection. </summary>
         private void ClearSyncFileGroups()
         {
@@ -158,21 +231,40 @@ namespace Syncler.Data.Synchronisation
         /// <param name="basePath"> Base/start catalog path. </param>
         /// <param name="path"> Current subcatalog path. </param>
         /// <param name="result"> List of found files. </param>
-        private void ScanCatalog(string basePath, string path, List<SyncTempFileInfo> result)
+        private void ScanCatalog(string basePath, string path, List<SyncTempFileInfo> result, ref long filesCount)
         {
             foreach (var filePath in Directory.GetFiles(path))
             {
+                if (_bwScanner.CancellationPending)
+                    break;
+
                 FileInfo fileInfo = new FileInfo(filePath);
                 string subCatalog = path.Replace(basePath, string.Empty)
                     .Replace("\\", "/");
 
                 result.Add(new SyncTempFileInfo(filePath, fileInfo, subCatalog));
+                filesCount++;
+                ScanMessageUpdate(filesCount);
             }
 
             foreach (var directoryPath in Directory.GetDirectories(path))
             {
-                ScanCatalog(basePath, directoryPath, result);
+                if (_bwScanner.CancellationPending)
+                    break;
+
+                ScanCatalog(basePath, directoryPath, result, ref filesCount);
             }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update message displayed during files scan. </summary>
+        /// <param name="filesCount"> Current scanned files count. </param>
+        private void ScanMessageUpdate(long filesCount)
+        {
+            var action = new Action(() => SyncStateMessage = $"Scanned {filesCount} files.");
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         #endregion FILES MANAGEMENT METHODS
@@ -242,18 +334,30 @@ namespace Syncler.Data.Synchronisation
             {
                 List<SyncTempFileInfo> files = new List<SyncTempFileInfo>();
                 var paths = SyncGroup.Items.Select(i => i.Path);
+                long filesCounter = 0;
 
                 //  Scan files and directories.
                 foreach (var path in paths)
-                    ScanCatalog(path, path, files);
+                {
+                    if (_bwScanner.CancellationPending)
+                        break;
+
+                    ScanCatalog(path, path, files, ref filesCounter);
+                }
+
+                if (_bwScanner.CancellationPending)
+                    return;
 
                 //  Group files and directories.
                 var grouppedFiles = files.GroupBy(f => new { f.FileName, f.SubCatalog });
-                int counter = 0;
+                int groupsCounter = 0;
 
                 foreach (var fileGroup in grouppedFiles)
                 {
-                    counter++;
+                    if (_bwScanner.CancellationPending)
+                        break;
+
+                    groupsCounter++;
 
                     var syncFileInfoGroup = new SyncFileInfoGroup()
                     {
@@ -283,7 +387,7 @@ namespace Syncler.Data.Synchronisation
                     syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
 
                     if (!syncFileInfoGroup.ValidateFiles(SyncGroup, SyncValidationConfig.Default))
-                        _bwScanner.ReportProgress(100 * counter / grouppedFiles.Count(), syncFileInfoGroup);
+                        _bwScanner.ReportProgress(100 * groupsCounter / grouppedFiles.Count(), syncFileInfoGroup);
                 }
             }
             catch (Exception)
@@ -301,7 +405,10 @@ namespace Syncler.Data.Synchronisation
             var syncFileInfoGroup = e.UserState as SyncFileInfoGroup;
 
             if (syncFileInfoGroup != null)
+            {
                 AddSyncFileGroup(syncFileInfoGroup);
+                AddSyncFileMessageUpdate(e.ProgressPercentage);
+            }
         }
 
         //  --------------------------------------------------------------------------------

@@ -28,7 +28,6 @@
             
             <!-- CONVERTERS -->
 
-            <conv:SyncStateNameConverter x:Key="SyncStateNameConverter"/>
             <conv:StringDefaultValueConverter x:Key="StringDefaultValueConverter"/>
             <conv:StringNullVisibilityConverter x:Key="StringNullVisibilityConverter"/>
 
@@ -55,8 +54,15 @@
                 <Setter Property="SelectedBackground" Value="{Binding AppearanceThemeShadeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
                 <Setter Property="SelectedInactiveBackground" Value="{Binding AppearanceThemeShadeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
             </Style>
-            
-            <Style x:Key="SyncFileInfoListViewItemExStyle" BasedOn="{StaticResource SyncThreadListViewItemExStyle}" TargetType="{x:Type cex:ListViewItemEx}"/>
+
+            <Style x:Key="SyncFileInfoListViewItemExStyle" BasedOn="{StaticResource ListViewItemExStyle}"  TargetType="{x:Type cex:ListViewItemEx}">
+                <Setter Property="Background" Value="{Binding AppearanceThemeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="BorderBrush" Value="{Binding AppearanceThemeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="Foreground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
+                <Setter Property="SelectedInactiveBackground" Value="{Binding AppearanceThemeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="SelectedInactiveBorderBrush" Value="{Binding AppearanceThemeBackgroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+                <Setter Property="SelectedInactiveForeground" Value="{Binding AppearanceThemeForegroundBrush, Mode=OneWay, Source={StaticResource ConfigManager}}"/>
+            </Style>
 
             <!-- DATA TEMPLATES -->
 
@@ -180,7 +186,8 @@
                         Grid.Row="1"
                         ItemContainerStyle="{StaticResource SyncFileInfoListViewItemExStyle}"
                         ItemTemplate="{StaticResource SyncFileInfoDataTemplate}"
-                        ItemsSource="{Binding Files}"/>
+                        ItemsSource="{Binding Files}"
+                        PreviewMouseDoubleClick="SyncFileInfoListViewEx_PreviewMouseDoubleClick"/>
 
                     <Grid
                         Grid.Row="2"
@@ -232,11 +239,11 @@
                                 VerticalAlignment="Center">
 
                                 <TextBlock
-                                    Text="{Binding SyncState, Converter={StaticResource SyncStateNameConverter}}"
+                                    Text="{Binding SyncStateMessage}"
                                     VerticalAlignment="Center"/>
 
                                 <cex:ButtonEx
-                                    Content="Scan/Stop"
+                                    Content="{Binding ScanButtonLabel}"
                                     IconKind="FileSearch"
                                     Margin="8,0,0,0"
                                     Click="ScanFilesButtonEx_Click"/>

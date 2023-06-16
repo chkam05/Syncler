@@ -185,7 +185,6 @@
     <Compile Include="Converters\SolidColorBrushOpacityConverter.cs" />
     <Compile Include="Converters\StringDefaultValueConverter.cs" />
     <Compile Include="Converters\StringNullVisibilityConverter.cs" />
-    <Compile Include="Converters\SyncStateNameConverter.cs" />
     <Compile Include="Data\Configuration\AppearanceColor.cs" />
     <Compile Include="Data\Configuration\AppearanceConfig.cs" />
     <Compile Include="Data\Configuration\AppearanceThemeType.cs" />
