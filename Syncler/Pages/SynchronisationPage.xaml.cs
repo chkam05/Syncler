@@ -3,8 +3,10 @@ using Syncler.Data.Configuration;
 using Syncler.Data.Synchronisation;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Input;
 
@@ -15,7 +17,22 @@ namespace Syncler.Pages
 
         //  VARIABLES
 
+        private ObservableCollection<SyncFileMode> _syncFileModesCollection;
+
         public SyncManager SyncManager { get; private set; }
+
+
+        //  GETTERS & SETTERS
+
+        public ObservableCollection<SyncFileMode> SyncFileModesCollection
+        {
+            get => _syncFileModesCollection;
+            set
+            {
+                _syncFileModesCollection = value;
+                OnPropertyChanged(nameof(SyncFileModesCollection));
+            }
+        }
 
 
         //  METHODS
@@ -30,6 +47,10 @@ namespace Syncler.Pages
             //  Initialize modules.
             SyncManager = SyncManager.Instance;
             SyncManager.UpdateDispatcherHandler(new DispatcherHandler(this.Dispatcher));
+
+            //  Initialize data.
+            SyncFileModesCollection = new ObservableCollection<SyncFileMode>(
+                EnumHelper.GetEnumValues<SyncFileMode>());
 
             //  Initialize user interface.
             InitializeComponent();
@@ -55,6 +76,32 @@ namespace Syncler.Pages
                     case SyncState.STOPPED_SCANNING:
                     case SyncState.STOPPED_SYNCING:
                         syncThread.Scan();
+                        break;
+
+                    case SyncState.SCANNING:
+                    case SyncState.SYNCING:
+                        syncThread.Stop();
+                        break;
+                }
+            }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking sync/stop button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void SyncFilesButtonEx_Click(object sender, RoutedEventArgs e)
+        {
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncThread);
+
+            if (source is SyncThread syncThread)
+            {
+                switch (syncThread.SyncState)
+                {
+                    case SyncState.NONE:
+                    case SyncState.STOPPED_SCANNING:
+                    case SyncState.STOPPED_SYNCING:
+                        syncThread.Sync();
                         break;
 
                     case SyncState.SCANNING:

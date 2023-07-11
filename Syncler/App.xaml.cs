@@ -1,5 +1,6 @@
 ﻿using chkam05.Tools.ControlsEx.InternalMessages;
 using Syncler.Data.Configuration;
+using Syncler.Data.Logs;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
 using Syncler.Windows;
@@ -23,6 +24,7 @@ namespace Syncler
 
         public ConfigManager ConfigurationManager { get; private set; }
         public ApplicationInstanceCommunicator InstancesListener { get; private set; }
+        public Logger Logger { get; private set; }
 
 
         //  METHODS
@@ -50,6 +52,7 @@ namespace Syncler
             {
                 ConfigurationManager = ConfigManager.Instance;
                 InstancesListener = new ApplicationInstanceCommunicator(appName);
+                Logger = Logger.Instance;
             }
 
             base.OnStartup(e);

@@ -1,4 +1,5 @@
 ﻿using Syncler.Data.Configuration;
+using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,7 +23,7 @@ namespace Syncler.Data.Synchronisation
         private string _catalog;
         private string _fileName;
         private ObservableCollection<SyncFileInfo> _files;
-        private string _diffMessage = null;
+        private List<string> _diffMessages;
 
 
         //  GETTERS & SETTERS
@@ -60,12 +61,8 @@ namespace Syncler.Data.Synchronisation
 
         public string DiffMessage
         {
-            get => _diffMessage;
-            set
-            {
-                _diffMessage = value;
-                OnPropertyChanged(nameof(DiffMessage));
-            }
+            get => _diffMessages != null && _diffMessages.Any() 
+                ? string.Join(Environment.NewLine, _diffMessages) : string.Empty;
         }
 
 
@@ -77,10 +74,33 @@ namespace Syncler.Data.Synchronisation
         /// <summary> SyncFileInfoGroup class constructor. </summary>
         public SyncFileInfoGroup()
         {
-            //
+            _diffMessages = new List<string>();
         }
 
         #endregion CLASS METHODS
+
+        #region MESSAGEM METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Add diffrence message. </summary>
+        /// <param name="message"> Message. </param>
+        public void AddDiffMessage(string message)
+        {
+            _diffMessages.Add(message);
+            OnPropertyChanged(nameof(DiffMessage));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Remove diffrence message. </summary>
+        /// <param name="message"> Message. </param>
+        private void RemoveDiffMessage(string message)
+        {
+            if (_diffMessages.Contains(message))
+                _diffMessages.Remove(message);
+            OnPropertyChanged(nameof(DiffMessage));
+        }
+
+        #endregion MESSAGE METHODS
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
@@ -95,6 +115,66 @@ namespace Syncler.Data.Synchronisation
                 handler(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method for update SyncFileMode in SyncFileInfo. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Property Changed Event Arguments. </param>
+        public void OnFilePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SyncFileInfo.SyncFileMode))
+            {
+                var currSyncFileInfo = (SyncFileInfo)sender;
+                var diffrences = EnumHelper.GetEnumValues<SyncFileDiffrence>().ToArray();
+
+                if (currSyncFileInfo.SyncFileModeUpdateLock)
+                    return;
+
+                foreach (var syncFileInfo in Files.Where(f => f != currSyncFileInfo))
+                {
+                    var isEqual = currSyncFileInfo.CompareBy(syncFileInfo, diffrences);
+
+                    switch (currSyncFileInfo.SyncFileMode)
+                    {
+                        case SyncFileMode.NONE:
+                            break;
+
+                        case SyncFileMode.COPY:
+                            if (isEqual)
+                            {
+                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.NONE, true);
+                            }
+                            else if (!new[] { SyncFileMode.REMOVE, SyncFileMode.RENAME }.Contains(syncFileInfo.SyncFileMode))
+                            {
+                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.REMOVE, true);
+                            }
+                            break;
+
+                        case SyncFileMode.RENAME:
+                            if (isEqual)
+                            {
+                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.RENAME, true);
+                            }
+                            else if (!new[] { SyncFileMode.COPY, SyncFileMode.REMOVE }.Contains(syncFileInfo.SyncFileMode))
+                            {
+                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.COPY, true);
+                            }
+                            break;
+
+                        case SyncFileMode.REMOVE:
+                            if (isEqual)
+                            {
+                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.REMOVE, true);
+                            }
+                            else if (!new[] { SyncFileMode.COPY, SyncFileMode.REMOVE }.Contains(syncFileInfo.SyncFileMode))
+                            {
+                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.COPY, true);
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
         #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
         #region VALIDATION METHODS
@@ -102,20 +182,23 @@ namespace Syncler.Data.Synchronisation
         //  --------------------------------------------------------------------------------
         /// <summary> Validate if all files are good and synchronised. </summary>
         /// <param name="SyncGroup"> Sync group. </param>
-        /// <param name="validationConfig"> Validation configuration. </param>
+        /// <param name="diffrences"> Array of diffrences by which check will be performed. </param>
         /// <returns></returns>
-        public bool ValidateFiles(SyncGroup SyncGroup, SyncValidationConfig validationConfig)
+        public bool ValidateFiles(SyncGroup SyncGroup, SyncFileDiffrence[] diffrences)
         {
             var result = ValidateFilesCount(SyncGroup);
 
-            if (validationConfig.ByName && !ValidateFilesByName())
-                result = false;
+            if (diffrences != null && diffrences.Any())
+            {
+                if (diffrences.Contains(SyncFileDiffrence.Name) && !ValidateFilesByName())
+                    result = false;
 
-            if (validationConfig.BySize && !ValidateFilesBySize())
-                result = false;
+                if (diffrences.Contains(SyncFileDiffrence.Size) && !ValidateFilesBySize())
+                    result = false;
 
-            if (validationConfig.ByChecksum && !ValidateFilesByChecksum())
-                result = false;
+                if (diffrences.Contains(SyncFileDiffrence.Checksum) && !ValidateFilesByChecksum())
+                    result = false;
+            }
 
             return result;
         }
@@ -126,7 +209,6 @@ namespace Syncler.Data.Synchronisation
         /// <returns> True - files are ok; False - files are missing. </returns>
         private bool ValidateFilesCount(SyncGroup SyncGroup)
         {
-            var diffMessageSb = new StringBuilder();
             var result = true;
 
             if (SyncGroup.Items.Count != Files.Count)
@@ -138,14 +220,11 @@ namespace Syncler.Data.Synchronisation
                 if (dirs.Any())
                 {
                     foreach (var dir in dirs)
-                        diffMessageSb.AppendLine($"Missing file in {dir}");
+                        AddDiffMessage($"Missing file in {dir}");
 
                     result = false;
                 }
             }
-
-            if (!result)
-                DiffMessage = diffMessageSb.ToString();
 
             return result;
         }
@@ -163,7 +242,7 @@ namespace Syncler.Data.Synchronisation
 
                 foreach (var item in group)
                 {
-                    item.AppendDiffMessage("File name does not match the rest of the files.");
+                    item.AddDiffMessage("File name does not match the rest of the files.");
                 }
 
                 return false;
@@ -185,7 +264,7 @@ namespace Syncler.Data.Synchronisation
 
                 foreach (var item in group)
                 {
-                    item.AppendDiffMessage("File size is diffrent than the rest of the files size.");
+                    item.AddDiffMessage("File size is diffrent than the rest of the files size.");
                 }
 
                 return false;
@@ -207,7 +286,7 @@ namespace Syncler.Data.Synchronisation
 
                 foreach (var item in group)
                 {
-                    item.AppendDiffMessage("File checksum is diffrent than the rest of the files checksums.");
+                    item.AddDiffMessage("File checksum is diffrent than the rest of the files checksums.");
                 }
 
                 return false;

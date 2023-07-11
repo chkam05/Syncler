@@ -7,6 +7,8 @@
     xmlns:cex="clr-namespace:chkam05.Tools.ControlsEx;assembly=chkam05.Tools.ControlsEx"
     xmlns:cfg="clr-namespace:Syncler.Data.Configuration"
     xmlns:conv="clr-namespace:Syncler.Converters"
+    xmlns:convSync="clr-namespace:Syncler.Converters.Synchronisation"
+    xmlns:dataSync="clr-namespace:Syncler.Data.Synchronisation"
     xmlns:local="clr-namespace:Syncler.Pages"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:pages="clr-namespace:Syncler.Pages.Base"
@@ -30,6 +32,8 @@
 
             <conv:StringDefaultValueConverter x:Key="StringDefaultValueConverter"/>
             <conv:StringNullVisibilityConverter x:Key="StringNullVisibilityConverter"/>
+            <convSync:SyncFileModeNameConverter x:Key="SyncFileModeNameConverter"/>
+            <convSync:SyncFileModeRenameVisibilityConverter x:Key="SyncFileModeRenameVisibilityConverter"/>
 
             <!-- STYLES -->
 
@@ -71,19 +75,46 @@
                     
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <cex:CheckBoxEx
+                    <cex:ComboBoxEx
                         Grid.Column="0"
-                        IsChecked="{Binding Selected}"
-                        VerticalAlignment="Center"/>
+                        ItemsSource="{Binding SyncFileModesCollection, RelativeSource={RelativeSource AncestorType={x:Type local:SynchronisationPage}}}"
+                        SelectedItem="{Binding SyncFileMode}"
+                        VerticalContentAlignment="Center">
+                        <cex:ComboBoxEx.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    Text="{Binding Converter={StaticResource SyncFileModeNameConverter}}"
+                                    VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </cex:ComboBoxEx.ItemTemplate>
+                    </cex:ComboBoxEx>
 
                     <StackPanel
                         Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Orientation="Vertical"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding SyncFileMode, Converter={StaticResource SyncFileModeRenameVisibilityConverter}, Mode=OneWay}">
+
+                        <TextBlock
+                            FontSize="12"
+                            Text="New file name:"/>
+
+                        <cex:TextBoxEx
+                            Text="{Binding NewFileName}"
+                            MinWidth="160"/>
+
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="2"
                         Margin="8,0,0,0"
                         Orientation="Vertical"
                         VerticalAlignment="Center">
@@ -100,7 +131,7 @@
                     </StackPanel>
 
                     <StackPanel
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="16,0,0,0"
                         Orientation="Vertical"
                         VerticalAlignment="Center">
@@ -114,7 +145,7 @@
                     </StackPanel>
 
                     <StackPanel
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="16,0,0,0"
                         Orientation="Vertical"
                         VerticalAlignment="Center">
@@ -128,7 +159,7 @@
                     </StackPanel>
 
                     <StackPanel
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Margin="16,0,0,0"
                         Orientation="Vertical"
                         VerticalAlignment="Center">
@@ -247,6 +278,13 @@
                                     IconKind="FileSearch"
                                     Margin="8,0,0,0"
                                     Click="ScanFilesButtonEx_Click"/>
+
+                                <cex:ButtonEx
+                                    Content="Sync"
+                                    IconKind="Sync"
+                                    Margin="8,0,0,0"
+                                    Click="SyncFilesButtonEx_Click"
+                                    Visibility="{Binding SyncButtonVisibility}"/>
 
                             </StackPanel>
                         </Grid>

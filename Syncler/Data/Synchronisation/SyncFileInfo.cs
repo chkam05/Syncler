@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Syncler.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -15,6 +17,11 @@ namespace Syncler.Data.Synchronisation
 
         private static readonly int FILE_SIZE_SCALE = 1024;
         private static readonly string[] FILE_SIZE_SUFFIXES = { "B", "KB", "MB", "GB", "TB", "PB" };
+        private static readonly Dictionary<string, string> VALIDATION_MESSAGES = new Dictionary<string, string>()
+        {
+            { "EMPTY", "File name can not be empty." },
+            { "DUPLICATE", "File with that name already exists." }
+        };
 
 
         //  EVENTS
@@ -30,9 +37,11 @@ namespace Syncler.Data.Synchronisation
         private string _checksum;
         private DateTime _createdAt;
         private DateTime _modifiedAt;
+        private string _newFileName;
 
-        private string _diffMessage = string.Empty;
-        private bool _selected = false;
+        private List<string> _diffMessages;
+        private SyncFileMode _syncFileMode = SyncFileMode.NONE;
+        private bool _syncFileModeUpdateLock = false;
 
 
         //  GETTERS & SETTERS
@@ -61,6 +70,17 @@ namespace Syncler.Data.Synchronisation
         public string FileName
         {
             get => Path.GetFileName(_filePath);
+        }
+
+        public string NewFileName
+        {
+            get => _newFileName;
+            set
+            {
+                _newFileName = value;
+                OnPropertyChanged(nameof(NewFileName));
+                ValidateNewFileName();
+            }
         }
 
         public long FileSize
@@ -134,21 +154,26 @@ namespace Syncler.Data.Synchronisation
 
         public string DiffMessage
         {
-            get => _diffMessage;
+            get => _diffMessages?.Any() ?? false ? string.Join(Environment.NewLine, _diffMessages) : string.Empty;
+        }
+
+        public SyncFileMode SyncFileMode
+        {
+            get => _syncFileMode;
             set
             {
-                _diffMessage = value;
-                OnPropertyChanged(nameof(DiffMessage));
+                _syncFileMode = value;
+                OnPropertyChanged(nameof(SyncFileMode));
             }
         }
 
-        public bool Selected
+        public bool SyncFileModeUpdateLock
         {
-            get => _selected;
-            set
+            get => _syncFileModeUpdateLock;
+            private set
             {
-                _selected = value;
-                OnPropertyChanged(nameof(Selected));
+                _syncFileModeUpdateLock = value;
+                OnPropertyChanged(nameof(SyncFileModeUpdateLock));
             }
         }
 
@@ -161,20 +186,70 @@ namespace Syncler.Data.Synchronisation
         /// <summary> SyncFileInfo class constructor. </summary>
         public SyncFileInfo()
         {
-            //
+            _diffMessages = new List<string>();
         }
 
         #endregion CLASS METHODS
 
+        #region COMPARE METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Compare with other sync file info. </summary>
+        /// <param name="syncFileInfo"> Sync file info to compare with. </param>
+        /// <param name="diffrences"> Array of diffrences by which check will be performed. </param>
+        /// <returns></returns>
+        public bool CompareBy(SyncFileInfo syncFileInfo, SyncFileDiffrence[] diffrences)
+        {
+            var result = true;
+
+            if (diffrences != null && diffrences.Any())
+            {
+                foreach (var diffrence in diffrences)
+                {
+                    switch (diffrence)
+                    {
+                        case SyncFileDiffrence.Name:
+                            if (FileName != syncFileInfo.FileName)
+                                result = false;
+                            break;
+
+                        case SyncFileDiffrence.Size:
+                            if (FileSize != syncFileInfo.FileSize)
+                                result = false;
+                            break;
+
+                        case SyncFileDiffrence.Checksum:
+                            if (Checksum != syncFileInfo.Checksum)
+                                result = false;
+                            break;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        #endregion COMPARE METHODS
+
         #region MESSAGEM METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Append diffrence message. </summary>
+        /// <summary> Add diffrence message. </summary>
         /// <param name="message"> Message. </param>
-        public void AppendDiffMessage(string message)
+        public void AddDiffMessage(string message)
         {
-            DiffMessage = !string.IsNullOrEmpty(DiffMessage) ?
-                DiffMessage + Environment.NewLine + message : message;
+            _diffMessages.Add(message);
+            OnPropertyChanged(nameof(DiffMessage));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Remove diffrence message. </summary>
+        /// <param name="message"> Message. </param>
+        private void RemoveDiffMessage(string message)
+        {
+            if (_diffMessages.Contains(message))
+                _diffMessages.Remove(message);
+            OnPropertyChanged(nameof(DiffMessage));
         }
 
         #endregion MESSAGE METHODS
@@ -193,6 +268,51 @@ namespace Syncler.Data.Synchronisation
         }
 
         #endregion NOTIFY PROPERTIES CHANGED INTERFACE METHODS
+
+        #region UPDATE METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update sync file mode. </summary>
+        /// <param name="syncFileMode"> New sync file mode. </param>
+        /// <param name="updateLock"> Lock update. </param>
+        public void UpdateSyncFileMode(SyncFileMode syncFileMode, bool updateLock = false)
+        {
+            SyncFileModeUpdateLock = updateLock;
+            SyncFileMode = syncFileMode;
+            SyncFileModeUpdateLock = false;
+        }
+
+        #endregion UPDATE METHODS
+
+        #region VALIDATION METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Validate new file name. </summary>
+        private void ValidateNewFileName()
+        {
+            if (SyncFileMode == SyncFileMode.RENAME)
+            {
+                if (string.IsNullOrEmpty(NewFileName) && !_diffMessages.Contains(VALIDATION_MESSAGES["EMPTY"]))
+                    AddDiffMessage(VALIDATION_MESSAGES["EMPTY"]);
+                else if (_diffMessages.Contains(VALIDATION_MESSAGES["EMPTY"]))
+                    RemoveDiffMessage(VALIDATION_MESSAGES["EMPTY"]);
+
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(FilePath), NewFileName)) && !_diffMessages.Contains(VALIDATION_MESSAGES["DUPLICATE"]))
+                    AddDiffMessage(VALIDATION_MESSAGES["DUPLICATE"]);
+                else if (_diffMessages.Contains(VALIDATION_MESSAGES["DUPLICATE"]))
+                    RemoveDiffMessage(VALIDATION_MESSAGES["DUPLICATE"]);
+            }
+            else
+            {
+                if (_diffMessages.Contains(VALIDATION_MESSAGES["EMPTY"]))
+                    RemoveDiffMessage(VALIDATION_MESSAGES["EMPTY"]);
+
+                if (_diffMessages.Contains(VALIDATION_MESSAGES["DUPLICATE"]))
+                    RemoveDiffMessage(VALIDATION_MESSAGES["DUPLICATE"]);
+            }
+        }
+
+        #endregion VALIDATION METHODS
 
     }
 }

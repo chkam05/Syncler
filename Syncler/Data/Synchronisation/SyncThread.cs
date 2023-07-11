@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Syncler.Data.Synchronisation
 {
@@ -42,6 +43,7 @@ namespace Syncler.Data.Synchronisation
                 _syncState = value;
                 OnPropertyChanged(nameof(SyncState));
                 OnPropertyChanged(nameof(ScanButtonLabel));
+                OnPropertyChanged(nameof(SyncButtonVisibility));
 
                 switch (value)
                 {
@@ -101,6 +103,29 @@ namespace Syncler.Data.Synchronisation
 
                     default:
                         return anyScannedFile ? "Rescan" : "Scan";
+                }
+            }
+        }
+
+        public Visibility SyncButtonVisibility
+        {
+            get
+            {
+                bool anyScannedFile = SyncFileGroups != null && SyncFileGroups.Any();
+
+                switch (SyncState)
+                {
+                    case SyncState.SCANNING:
+                    case SyncState.SYNCING:
+                        return Visibility.Collapsed;
+
+                    case SyncState.STOPPED_SCANNING:
+                    case SyncState.STOPPED_SYNCING:
+                        return Visibility.Visible;
+
+                    case SyncState.NONE:
+                    default:
+                        return anyScannedFile ? Visibility.Visible : Visibility.Collapsed;
                 }
             }
         }
@@ -183,7 +208,7 @@ namespace Syncler.Data.Synchronisation
 
         #endregion DATA MANAGEMENT METHODS
 
-        #region FILES MANAGEMENT METHODS
+        #region FILES SCAN MANAGEMENT METHODS
 
         //  --------------------------------------------------------------------------------
         /// <summary> Add sync file group to sync file groups collection.</summary>
@@ -197,29 +222,13 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Update message displayed during files comparing. </summary>
-        /// <param name="percent"> Current compared files count. </param>
-        private void AddSyncFileMessageUpdate(int percent)
-        {
-            var action = new Action(() => SyncStateMessage = $"Comparing files {percent}% ...");
-
-            if (!_dispatherHandler?.TryInvoke(action) ?? false)
-                action.Invoke();
-        }
-
-        //  --------------------------------------------------------------------------------
         /// <summary> Clear sync file groups collection. </summary>
         private void ClearSyncFileGroups()
         {
             var action = new Action(() =>
             {
-                if (SyncFileGroups == null)
-                {
-                    SyncFileGroups = new ObservableCollection<SyncFileInfoGroup>();
-                    return;
-                }
-
-                SyncFileGroups.Clear();
+                SyncFileGroups = new ObservableCollection<SyncFileInfoGroup>();
+                return;
             });
 
             if (!_dispatherHandler?.TryInvoke(action) ?? false)
@@ -267,7 +276,41 @@ namespace Syncler.Data.Synchronisation
                 action.Invoke();
         }
 
-        #endregion FILES MANAGEMENT METHODS
+        #endregion FILES SCAN MANAGEMENT METHODS
+
+        #region FILES SYNC MANAGEMENT METHODS
+
+        //  --------------------------------------------------------------------------------
+        private void CopyFile(SyncFileInfo syncFileInfo, IEnumerable<string> catalogs)
+        {
+            //
+        }
+
+        //  --------------------------------------------------------------------------------
+        private void RemoveFile(SyncFileInfo syncFileInfo)
+        {
+            //
+        }
+
+        //  --------------------------------------------------------------------------------
+        private void RenameAndCopyFile(SyncFileInfo syncFileInfo, IEnumerable<string> catalogs)
+        {
+            //
+        }
+
+        //  --------------------------------------------------------------------------------
+        private void RemoveSyncFileGroup()
+        {
+            var action = new Action(() =>
+            {
+                //
+            });
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
+        }
+
+        #endregion FILES SYNC MANAGEMENT METHODS
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 
@@ -373,7 +416,7 @@ namespace Syncler.Data.Synchronisation
                         if (!string.IsNullOrEmpty(f.SubCatalog))
                             basePath = basePath.Replace(f.SubCatalog.Replace("/", "\\"), string.Empty);
 
-                        return new SyncFileInfo()
+                        var syncFileInfo = new SyncFileInfo()
                         {
                             BasePath = Path.GetFileName(basePath),
                             FilePath = f.FilePath,
@@ -382,11 +425,15 @@ namespace Syncler.Data.Synchronisation
                             Checksum = CalculateChecksum(fileInfo),
                             FileSize = fileInfo.Length,
                         };
+
+                        syncFileInfo.PropertyChanged += syncFileInfoGroup.OnFilePropertyChanged;
+
+                        return syncFileInfo;
                     });
 
                     syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
 
-                    if (!syncFileInfoGroup.ValidateFiles(SyncGroup, SyncValidationConfig.Default))
+                    if (!syncFileInfoGroup.ValidateFiles(SyncGroup, EnumHelper.GetEnumValues<SyncFileDiffrence>().ToArray()))
                         _bwScanner.ReportProgress(100 * groupsCounter / grouppedFiles.Count(), syncFileInfoGroup);
                 }
             }
@@ -407,7 +454,7 @@ namespace Syncler.Data.Synchronisation
             if (syncFileInfoGroup != null)
             {
                 AddSyncFileGroup(syncFileInfoGroup);
-                AddSyncFileMessageUpdate(e.ProgressPercentage);
+                ScanSyncFileMessageUpdate($"Comparing files {e.ProgressPercentage}% ...");
             }
         }
 
@@ -439,13 +486,55 @@ namespace Syncler.Data.Synchronisation
         //  --------------------------------------------------------------------------------
         private void Sync(object sender, DoWorkEventArgs e)
         {
-            //
+            int groupsCounter = 0;
+
+            foreach (var syncFileGroup in SyncFileGroups)
+            {
+                if (_bwSyncler.CancellationPending)
+                    break;
+
+                groupsCounter++;
+
+                var catalogs = SyncGroup.Items.Select(sgi
+                    => Path.Combine(sgi.Path, syncFileGroup.Catalog.Replace("/", "")));
+
+                foreach (var syncFileInfo in syncFileGroup.Files.OrderBy(o
+                    => OrderBySyncFileMode(o.SyncFileMode)))
+                {
+                    if (_bwSyncler.CancellationPending)
+                        break;
+
+                    var filePaths = syncFileGroup.Files.Select(f => Path.GetDirectoryName(f.FilePath));
+
+                    switch (syncFileInfo.SyncFileMode)
+                    {
+                        case SyncFileMode.NONE:
+                            break;
+
+                        case SyncFileMode.REMOVE:
+                            RemoveFile(syncFileInfo);
+                            break;
+
+                        case SyncFileMode.RENAME:
+                            RenameAndCopyFile(syncFileInfo, catalogs.Where(cat => !filePaths.Any(p => cat == p)
+                                || !File.Exists(Path.Combine(cat, syncFileInfo.NewFileName))));
+                            break;
+
+                        case SyncFileMode.COPY:
+                            CopyFile(syncFileInfo, catalogs.Where(cat => !filePaths.Any(p => cat == p)));
+                            break;
+                    }
+                }
+
+                _bwSyncler.ReportProgress(100 * groupsCounter / SyncFileGroups.Count(), syncFileGroup.FileName);
+            }
         }
 
         //  --------------------------------------------------------------------------------
         private void OnSyncProgress(object sender, ProgressChangedEventArgs e)
         {
-            //
+            string fileName = (string)e.UserState;
+            ScanSyncFileMessageUpdate($"Synchronising file \"{fileName}\" {e.ProgressPercentage}% ...");
         }
 
         //  --------------------------------------------------------------------------------
@@ -462,6 +551,17 @@ namespace Syncler.Data.Synchronisation
 
             else if (_bwSyncler != null && _bwSyncler.IsBusy)
                 _bwSyncler.CancelAsync();
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update message displayed during files scan/sync. </summary>
+        /// <param name="message"> Message. </param>
+        private void ScanSyncFileMessageUpdate(string message)
+        {
+            var action = new Action(() => SyncStateMessage = message);
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         #endregion THREADS METHODS
@@ -481,6 +581,23 @@ namespace Syncler.Data.Synchronisation
                     byte[] checksumBytes = md5.ComputeHash(stream);
                     return BitConverter.ToString(checksumBytes).Replace("-", string.Empty);
                 }
+            }
+        }
+
+        //  --------------------------------------------------------------------------------
+        private int OrderBySyncFileMode(SyncFileMode syncFileMode)
+        {
+            switch (syncFileMode)
+            {
+                case SyncFileMode.REMOVE:
+                    return 1;
+                case SyncFileMode.RENAME:
+                    return 2;
+                case SyncFileMode.COPY:
+                    return 3;
+                case SyncFileMode.NONE:
+                default:
+                    return 0;
             }
         }
 

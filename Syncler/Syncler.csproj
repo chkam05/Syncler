@@ -185,6 +185,8 @@
     <Compile Include="Converters\SolidColorBrushOpacityConverter.cs" />
     <Compile Include="Converters\StringDefaultValueConverter.cs" />
     <Compile Include="Converters\StringNullVisibilityConverter.cs" />
+    <Compile Include="Converters\Synchronisation\SyncFileModeNameConverter.cs" />
+    <Compile Include="Converters\Synchronisation\SyncFileModeRenameVisibilityConverter.cs" />
     <Compile Include="Data\Configuration\AppearanceColor.cs" />
     <Compile Include="Data\Configuration\AppearanceConfig.cs" />
     <Compile Include="Data\Configuration\AppearanceThemeType.cs" />
@@ -194,13 +196,16 @@
     <Compile Include="Data\Configuration\SyncGroupItem.cs" />
     <Compile Include="Data\Events\ErrorRelayEventArgs.cs" />
     <Compile Include="Data\Events\ExtNotifyCollectionChangedEventArgs.cs" />
+    <Compile Include="Data\Logs\Log.cs" />
+    <Compile Include="Data\Logs\Logger.cs" />
+    <Compile Include="Data\Synchronisation\SyncFileDiffrence.cs" />
     <Compile Include="Data\Synchronisation\SyncFileInfo.cs" />
     <Compile Include="Data\Synchronisation\SyncFileInfoGroup.cs" />
+    <Compile Include="Data\Synchronisation\SyncFileMode.cs" />
     <Compile Include="Data\Synchronisation\SyncManager.cs" />
     <Compile Include="Data\Synchronisation\SyncState.cs" />
     <Compile Include="Data\Synchronisation\SyncTempFileInfo.cs" />
     <Compile Include="Data\Synchronisation\SyncThread.cs" />
-    <Compile Include="Data\Synchronisation\SyncValidationConfig.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="InternalMessages\AddModifySyncGroupIM.xaml.cs">
       <DependentUpon>AddModifySyncGroupIM.xaml</DependentUpon>
