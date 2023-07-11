@@ -206,6 +206,7 @@
     <Compile Include="Data\Synchronisation\SyncState.cs" />
     <Compile Include="Data\Synchronisation\SyncTempFileInfo.cs" />
     <Compile Include="Data\Synchronisation\SyncThread.cs" />
+    <Compile Include="Data\Synchronisation\SyncThreadUIContext.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="InternalMessages\AddModifySyncGroupIM.xaml.cs">
       <DependentUpon>AddModifySyncGroupIM.xaml</DependentUpon>

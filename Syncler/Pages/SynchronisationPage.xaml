@@ -248,7 +248,8 @@
             <DataTemplate x:Key="SyncThreadDataTemplate">
                 <cex:ExpanderEx
                     HeaderHorizontalContentAlignment="Stretch"
-                    IconKind="Group">
+                    IconKind="Group"
+                    IsExpanded="True">
 
                     <cex:ExpanderEx.Header>
                         <Grid>
@@ -269,22 +270,38 @@
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
 
+                                <materialDesign:PackIcon
+                                    Height="24"
+                                    Kind="{Binding SyncThreadUIContext.StateIcon}"
+                                    VerticalAlignment="Center"
+                                    Width="24"/>
+
                                 <TextBlock
-                                    Text="{Binding SyncStateMessage}"
+                                    Margin="8,0,0,0"
+                                    Text="{Binding SyncThreadUIContext.StateMessage}"
                                     VerticalAlignment="Center"/>
 
                                 <cex:ButtonEx
-                                    Content="{Binding ScanButtonLabel}"
+                                    Content="{Binding SyncThreadUIContext.ButtonScanTitle}"
                                     IconKind="FileSearch"
+                                    IsEnabled="{Binding SyncThreadUIContext.ButtonScanEnabled}"
                                     Margin="8,0,0,0"
                                     Click="ScanFilesButtonEx_Click"/>
 
                                 <cex:ButtonEx
                                     Content="Sync"
                                     IconKind="Sync"
+                                    IsEnabled="{Binding SyncThreadUIContext.ButtonSyncEnabled}"
                                     Margin="8,0,0,0"
                                     Click="SyncFilesButtonEx_Click"
                                     Visibility="{Binding SyncButtonVisibility}"/>
+
+                                <cex:ButtonEx
+                                    Content="{Binding SyncThreadUIContext.ButtonCancelTitle}"
+                                    IconKind="Stop"
+                                    IsEnabled="{Binding SyncThreadUIContext.ButtonCancelEnabled}"
+                                    Margin="8,0,0,0"
+                                    Click="StopButtonEx_Click"/>
 
                             </StackPanel>
                         </Grid>

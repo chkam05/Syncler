@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -31,6 +32,7 @@ namespace Syncler.Data.Synchronisation
         private string _syncStateMessage = string.Empty;
         private SyncGroup _syncGroup;
         private ObservableCollection<SyncFileInfoGroup> _syncFileGroups;
+        private SyncThreadUIContext _syncThreadUIContext;
 
 
         //  GETTERS & SETTERS
@@ -42,91 +44,7 @@ namespace Syncler.Data.Synchronisation
             {
                 _syncState = value;
                 OnPropertyChanged(nameof(SyncState));
-                OnPropertyChanged(nameof(ScanButtonLabel));
-                OnPropertyChanged(nameof(SyncButtonVisibility));
-
-                switch (value)
-                {
-                    case SyncState.NONE:
-                        SyncStateMessage = "Ready.";
-                        break;
-
-                    case SyncState.SCANNING:
-                        SyncStateMessage = "Scanning...";
-                        break;
-
-                    case SyncState.SYNCING:
-                        SyncStateMessage = "Synchronising...";
-                        break;
-
-                    case SyncState.STOPPED_SCANNING:
-                        SyncStateMessage = "Scanning stopped.";
-                        break;
-
-                    case SyncState.STOPPED_SYNCING:
-                        SyncStateMessage = "Sync stopped.";
-                        break;
-                }
-            }
-        }
-
-        public string SyncStateMessage
-        {
-            get => _syncStateMessage;
-            set
-            {
-                _syncStateMessage = value;
-                OnPropertyChanged(nameof(SyncStateMessage));
-            }
-        }
-
-        public string ScanButtonLabel
-        {
-            get
-            {
-                bool anyScannedFile = SyncFileGroups != null && SyncFileGroups.Any();
-
-                switch (SyncState)
-                {
-                    case SyncState.NONE:
-                        return anyScannedFile ? "Rescan" : "Scan";
-
-                    case SyncState.SCANNING:
-                        return "Stop scan";
-
-                    case SyncState.SYNCING:
-                        return "Stop sync";
-
-                    case SyncState.STOPPED_SCANNING:
-                    case SyncState.STOPPED_SYNCING:
-                        return "Rescan";
-
-                    default:
-                        return anyScannedFile ? "Rescan" : "Scan";
-                }
-            }
-        }
-
-        public Visibility SyncButtonVisibility
-        {
-            get
-            {
-                bool anyScannedFile = SyncFileGroups != null && SyncFileGroups.Any();
-
-                switch (SyncState)
-                {
-                    case SyncState.SCANNING:
-                    case SyncState.SYNCING:
-                        return Visibility.Collapsed;
-
-                    case SyncState.STOPPED_SCANNING:
-                    case SyncState.STOPPED_SYNCING:
-                        return Visibility.Visible;
-
-                    case SyncState.NONE:
-                    default:
-                        return anyScannedFile ? Visibility.Visible : Visibility.Collapsed;
-                }
+                SyncThreadUIContext.UpdateUI(SyncState, SyncFileGroups?.Any() ?? false);
             }
         }
 
@@ -151,6 +69,16 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        public SyncThreadUIContext SyncThreadUIContext
+        {
+            get => _syncThreadUIContext;
+            private set
+            {
+                _syncThreadUIContext = value;
+                OnPropertyChanged(nameof(SyncThreadUIContext));
+            }
+        }
+
 
         //  METHODS
 
@@ -162,6 +90,7 @@ namespace Syncler.Data.Synchronisation
         public SyncThread(SyncGroup syncGroup)
         {
             SyncGroup = syncGroup;
+            SyncThreadUIContext = new SyncThreadUIContext(SyncState);
         }
 
         //  --------------------------------------------------------------------------------
@@ -253,7 +182,7 @@ namespace Syncler.Data.Synchronisation
 
                 result.Add(new SyncTempFileInfo(filePath, fileInfo, subCatalog));
                 filesCount++;
-                ScanMessageUpdate(filesCount);
+                StateMessageUpdate($"Scanned {filesCount} files.");
             }
 
             foreach (var directoryPath in Directory.GetDirectories(path))
@@ -263,17 +192,6 @@ namespace Syncler.Data.Synchronisation
 
                 ScanCatalog(basePath, directoryPath, result, ref filesCount);
             }
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Update message displayed during files scan. </summary>
-        /// <param name="filesCount"> Current scanned files count. </param>
-        private void ScanMessageUpdate(long filesCount)
-        {
-            var action = new Action(() => SyncStateMessage = $"Scanned {filesCount} files.");
-
-            if (!_dispatherHandler?.TryInvoke(action) ?? false)
-                action.Invoke();
         }
 
         #endregion FILES SCAN MANAGEMENT METHODS
@@ -386,6 +304,7 @@ namespace Syncler.Data.Synchronisation
                         break;
 
                     ScanCatalog(path, path, files, ref filesCounter);
+                    Thread.Sleep(1000);
                 }
 
                 if (_bwScanner.CancellationPending)
@@ -454,7 +373,7 @@ namespace Syncler.Data.Synchronisation
             if (syncFileInfoGroup != null)
             {
                 AddSyncFileGroup(syncFileInfoGroup);
-                ScanSyncFileMessageUpdate($"Comparing files {e.ProgressPercentage}% ...");
+                StateMessageUpdate($"Comparing files {e.ProgressPercentage}% ...");
             }
         }
 
@@ -526,15 +445,14 @@ namespace Syncler.Data.Synchronisation
                     }
                 }
 
-                _bwSyncler.ReportProgress(100 * groupsCounter / SyncFileGroups.Count(), syncFileGroup.FileName);
+                _bwSyncler.ReportProgress(100 * groupsCounter / SyncFileGroups.Count());
             }
         }
 
         //  --------------------------------------------------------------------------------
         private void OnSyncProgress(object sender, ProgressChangedEventArgs e)
         {
-            string fileName = (string)e.UserState;
-            ScanSyncFileMessageUpdate($"Synchronising file \"{fileName}\" {e.ProgressPercentage}% ...");
+            StateMessageUpdate($"Synchronising files {e.ProgressPercentage}% ...");
         }
 
         //  --------------------------------------------------------------------------------
@@ -551,17 +469,6 @@ namespace Syncler.Data.Synchronisation
 
             else if (_bwSyncler != null && _bwSyncler.IsBusy)
                 _bwSyncler.CancelAsync();
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Update message displayed during files scan/sync. </summary>
-        /// <param name="message"> Message. </param>
-        private void ScanSyncFileMessageUpdate(string message)
-        {
-            var action = new Action(() => SyncStateMessage = message);
-
-            if (!_dispatherHandler?.TryInvoke(action) ?? false)
-                action.Invoke();
         }
 
         #endregion THREADS METHODS
@@ -585,6 +492,9 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Sync file mode order. </summary>
+        /// <param name="syncFileMode"> Sync file mode. </param>
+        /// <returns> Order of sync file mode. </returns>
         private int OrderBySyncFileMode(SyncFileMode syncFileMode)
         {
             switch (syncFileMode)
@@ -599,6 +509,17 @@ namespace Syncler.Data.Synchronisation
                 default:
                     return 0;
             }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update message displayed during files scan/sync. </summary>
+        /// <param name="message"> Message. </param>
+        private void StateMessageUpdate(string message)
+        {
+            var action = new Action(() => SyncThreadUIContext.UpdateStateMessage(message));
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         #endregion UTILITY METHODS

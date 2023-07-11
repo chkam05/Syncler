@@ -61,7 +61,7 @@ namespace Syncler.Pages
         #region INTERACTION METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after clicking scan/stop button. </summary>
+        /// <summary> Method invoked after clicking scan button. </summary>
         /// <param name="sender"> Object that invoked method. </param>
         /// <param name="e"> Routed Event Arguments. </param>
         private void ScanFilesButtonEx_Click(object sender, RoutedEventArgs e)
@@ -69,25 +69,11 @@ namespace Syncler.Pages
             var source = ((e.Source as ButtonEx)?.DataContext as SyncThread);
 
             if (source is SyncThread syncThread)
-            {
-                switch (syncThread.SyncState)
-                {
-                    case SyncState.NONE:
-                    case SyncState.STOPPED_SCANNING:
-                    case SyncState.STOPPED_SYNCING:
-                        syncThread.Scan();
-                        break;
-
-                    case SyncState.SCANNING:
-                    case SyncState.SYNCING:
-                        syncThread.Stop();
-                        break;
-                }
-            }
+                syncThread.Scan();
         }
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Method invoked after clicking sync/stop button. </summary>
+        /// <summary> Method invoked after clicking sync button. </summary>
         /// <param name="sender"> Object that invoked method. </param>
         /// <param name="e"> Routed Event Arguments. </param>
         private void SyncFilesButtonEx_Click(object sender, RoutedEventArgs e)
@@ -95,21 +81,19 @@ namespace Syncler.Pages
             var source = ((e.Source as ButtonEx)?.DataContext as SyncThread);
 
             if (source is SyncThread syncThread)
-            {
-                switch (syncThread.SyncState)
-                {
-                    case SyncState.NONE:
-                    case SyncState.STOPPED_SCANNING:
-                    case SyncState.STOPPED_SYNCING:
-                        syncThread.Sync();
-                        break;
+                syncThread.Sync();
+        }
+        
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking stop button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void StopButtonEx_Click(object sender, RoutedEventArgs e)
+        {
+            var source = ((e.Source as ButtonEx)?.DataContext as SyncThread);
 
-                    case SyncState.SCANNING:
-                    case SyncState.SYNCING:
-                        syncThread.Stop();
-                        break;
-                }
-            }
+            if (source is SyncThread syncThread)
+                syncThread.Stop();
         }
 
         //  --------------------------------------------------------------------------------
