@@ -141,7 +141,8 @@ namespace Syncler.Data.Synchronisation
                         case SyncFileMode.COPY:
                             if (isEqual)
                             {
-                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.NONE, true);
+                                if (!new[] { SyncFileMode.NONE, SyncFileMode.COPY, SyncFileMode.RENAME }.Contains(syncFileInfo.SyncFileMode))
+                                    syncFileInfo.UpdateSyncFileMode(SyncFileMode.NONE, true);
                             }
                             else if (!new[] { SyncFileMode.REMOVE, SyncFileMode.RENAME }.Contains(syncFileInfo.SyncFileMode))
                             {
@@ -152,7 +153,8 @@ namespace Syncler.Data.Synchronisation
                         case SyncFileMode.RENAME:
                             if (isEqual)
                             {
-                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.RENAME, true);
+                                if (!new[] { SyncFileMode.NONE, SyncFileMode.COPY, SyncFileMode.REMOVE }.Contains(syncFileInfo.SyncFileMode))
+                                    syncFileInfo.UpdateSyncFileMode(SyncFileMode.NONE, true);
                             }
                             else if (!new[] { SyncFileMode.COPY, SyncFileMode.REMOVE }.Contains(syncFileInfo.SyncFileMode))
                             {
@@ -163,7 +165,8 @@ namespace Syncler.Data.Synchronisation
                         case SyncFileMode.REMOVE:
                             if (isEqual)
                             {
-                                syncFileInfo.UpdateSyncFileMode(SyncFileMode.REMOVE, true);
+                                if (!new[] { SyncFileMode.RENAME, SyncFileMode.REMOVE }.Contains(syncFileInfo.SyncFileMode))
+                                    syncFileInfo.UpdateSyncFileMode(SyncFileMode.REMOVE, true);
                             }
                             else if (!new[] { SyncFileMode.COPY, SyncFileMode.REMOVE }.Contains(syncFileInfo.SyncFileMode))
                             {

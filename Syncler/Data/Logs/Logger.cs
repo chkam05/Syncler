@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Syncler.Data.Logs
 {
@@ -66,6 +67,37 @@ namespace Syncler.Data.Logs
         }
 
         #endregion CLASS METHODS
+
+        #region LOGS MANAGEMENT METHODS
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Add log. </summary>
+        /// <param name="dateTime"> Date time. </param>
+        /// <param name="message"> Message. </param>
+        public void AddLog(DateTime dateTime, string message)
+        {
+            LogsCollection.Add(new Log(dateTime, message));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Add log. </summary>
+        /// <param name="dateTime"> Date time. </param>
+        /// <param name="message"> Message. </param>
+        /// <param name="action"> Action (type of log). </param>
+        /// <param name="context"> Context (part of application). </param>
+        public void AddLog(DateTime dateTime, string message, string action, string context)
+        {
+            LogsCollection.Add(new Log(dateTime, message, action, context));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Clear logs. </summary>
+        public void ClearLogs()
+        {
+            LogsCollection.Clear();
+        }
+
+        #endregion LOGS MANAGEMETN METHODS
 
         #region NOTIFY PROPERTIES CHANGED INTERFACE METHODS
 

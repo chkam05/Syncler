@@ -18,6 +18,8 @@ namespace Syncler.Data.Logs
         //  VARIABLES
 
         private DateTime _dateTime;
+        private string _action;
+        private string _context;
         private string _message;
 
 
@@ -29,6 +31,32 @@ namespace Syncler.Data.Logs
             {
                 _dateTime = value;
                 OnPropertyChanged(nameof(DateTime));
+                OnPropertyChanged(nameof(DateTimeStr));
+            }
+        }
+
+        public string DateTimeStr
+        {
+            get => DateTime.ToString("yyyy-MM-dd hh:mm:ss");
+        }
+
+        public string Action
+        {
+            get => _action;
+            set
+            {
+                _action = value;
+                OnPropertyChanged(nameof(Action));
+            }
+        }
+
+        public string Context
+        {
+            get => _context;
+            set
+            {
+                _context = value;
+                OnPropertyChanged(nameof(Context));
             }
         }
 
@@ -49,12 +77,16 @@ namespace Syncler.Data.Logs
 
         //  --------------------------------------------------------------------------------
         /// <summary> Log class constructor. </summary>
-        /// <param name="dateTime"> Log date time. </param>
-        /// <param name="message"> Log message. </param>
-        public Log(DateTime dateTime, string message)
+        /// <param name="dateTime"> Date time. </param>
+        /// <param name="message"> Message. </param>
+        /// <param name="action"> Action (type of log). </param>
+        /// <param name="context"> Context (part of application). </param>
+        public Log(DateTime dateTime, string message, string action = "Info", string context = "Application")
         {
             DateTime = dateTime;
             Message = message;
+            Action = action;
+            Context = context;
         }
 
         #endregion CLASS METHODS

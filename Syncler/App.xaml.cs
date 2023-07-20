@@ -53,6 +53,7 @@ namespace Syncler
                 ConfigurationManager = ConfigManager.Instance;
                 InstancesListener = new ApplicationInstanceCommunicator(appName);
                 Logger = Logger.Instance;
+                Logger.AddLog(DateTime.Now, "Application started");
             }
 
             base.OnStartup(e);

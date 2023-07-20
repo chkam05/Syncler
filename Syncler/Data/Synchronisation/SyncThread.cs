@@ -1,4 +1,6 @@
-﻿using Syncler.Data.Configuration;
+﻿using Microsoft.VisualBasic.FileIO;
+using Syncler.Data.Configuration;
+using Syncler.Data.Logs;
 using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
@@ -144,7 +146,11 @@ namespace Syncler.Data.Synchronisation
         /// <param name="syncFileInfoGroup"> Sync file group to add. </param>
         private void AddSyncFileGroup(SyncFileInfoGroup syncFileInfoGroup)
         {
-            var action = new Action(() => SyncFileGroups.Add(syncFileInfoGroup));
+            var action = new Action(() =>
+            {
+                SyncFileGroups.Add(syncFileInfoGroup);
+                Logger.Instance.AddLog(DateTime.Now, $"Found diffrence in file: \"{syncFileInfoGroup.FileName}\"", "Scan", SyncGroup.Name);
+            });
 
             if (!_dispatherHandler?.TryInvoke(action) ?? false)
                 action.Invoke();
@@ -157,7 +163,7 @@ namespace Syncler.Data.Synchronisation
             var action = new Action(() =>
             {
                 SyncFileGroups = new ObservableCollection<SyncFileInfoGroup>();
-                return;
+                Logger.Instance.AddLog(DateTime.Now, "Cleared scan results", "Scan", SyncGroup.Name);
             });
 
             if (!_dispatherHandler?.TryInvoke(action) ?? false)
@@ -201,27 +207,64 @@ namespace Syncler.Data.Synchronisation
         //  --------------------------------------------------------------------------------
         private void CopyFile(SyncFileInfo syncFileInfo, IEnumerable<string> catalogs)
         {
-            //
+            var action = new Action(() =>
+            {
+                foreach (var catalog in catalogs)
+                {
+                    var destPath = Path.Combine(catalog, syncFileInfo.FileName);
+                    Logger.Instance.AddLog(DateTime.Now, $"Copying file \"{syncFileInfo.FileName}\" to \"{catalog}\"", "Sync", SyncGroup.Name);
+                    File.Copy(syncFileInfo.FilePath, destPath);
+                }
+            });
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         //  --------------------------------------------------------------------------------
         private void RemoveFile(SyncFileInfo syncFileInfo)
         {
-            //
+            var action = new Action(() =>
+            {
+                Logger.Instance.AddLog(DateTime.Now, $"Removing file \"{syncFileInfo.FileName}\"", "Sync", SyncGroup.Name);
+                FileSystem.DeleteFile(syncFileInfo.FilePath, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+            });
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         //  --------------------------------------------------------------------------------
         private void RenameAndCopyFile(SyncFileInfo syncFileInfo, IEnumerable<string> catalogs)
         {
-            //
+            var action = new Action(() =>
+            {
+                Logger.Instance.AddLog(DateTime.Now, $"Renaming file \"{syncFileInfo.FileName}\" to \"{syncFileInfo.NewFileName}\"", "Sync", SyncGroup.Name);
+
+                foreach (var catalog in catalogs)
+                {
+                    var destPath = Path.Combine(catalog, syncFileInfo.NewFileName);
+                    Logger.Instance.AddLog(DateTime.Now, $"Copying file \"{syncFileInfo.NewFileName}\" to \"{catalog}\"", "Sync", SyncGroup.Name);
+                    File.Copy(syncFileInfo.FilePath, destPath);
+                }
+
+                FileSystem.DeleteFile(syncFileInfo.FilePath, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+            });
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
         }
 
         //  --------------------------------------------------------------------------------
-        private void RemoveSyncFileGroup()
+        private void RemoveSyncFileGroups(List<SyncFileInfoGroup> completedSyncFileGroups)
         {
             var action = new Action(() =>
             {
-                //
+                foreach (var syncFileGroup in completedSyncFileGroups)
+                {
+                    Logger.Instance.AddLog(DateTime.Now, $"Sync file \"{syncFileGroup.FileName}\" completed", "Sync", SyncGroup.Name);
+                    SyncFileGroups.Remove(syncFileGroup);
+                }
             });
 
             if (!_dispatherHandler?.TryInvoke(action) ?? false)
@@ -280,6 +323,8 @@ namespace Syncler.Data.Synchronisation
             _bwScanner.RunWorkerCompleted += OnScanComplete;
 
             SyncState = SyncState.SCANNING;
+
+            Logger.Instance.AddLog(DateTime.Now, $"Started scanning", "Scan", SyncGroup.Name);
             _bwScanner.RunWorkerAsync();
         }
 
@@ -384,6 +429,7 @@ namespace Syncler.Data.Synchronisation
         private void OnScanComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             SyncState = e.Cancelled ? SyncState.STOPPED_SCANNING : SyncState.NONE;
+            Logger.Instance.AddLog(DateTime.Now, $"Finished scanning", "Scan", SyncGroup.Name);
         }
 
         //  --------------------------------------------------------------------------------
@@ -399,6 +445,7 @@ namespace Syncler.Data.Synchronisation
             _bwSyncler.RunWorkerCompleted += OnSyncComplete;
 
             SyncState = SyncState.SYNCING;
+            Logger.Instance.AddLog(DateTime.Now, $"Started synchronisation", "Sync", SyncGroup.Name);
             _bwSyncler.RunWorkerAsync();
         }
 
@@ -406,6 +453,7 @@ namespace Syncler.Data.Synchronisation
         private void Sync(object sender, DoWorkEventArgs e)
         {
             int groupsCounter = 0;
+            var completedSyncFileGroups = new List<SyncFileInfoGroup>();
 
             foreach (var syncFileGroup in SyncFileGroups)
             {
@@ -416,6 +464,9 @@ namespace Syncler.Data.Synchronisation
 
                 var catalogs = SyncGroup.Items.Select(sgi
                     => Path.Combine(sgi.Path, syncFileGroup.Catalog.Replace("/", "")));
+
+                var allowComplete = syncFileGroup.Files.Any(f => f.SyncFileMode == SyncFileMode.COPY
+                    || f.SyncFileMode == SyncFileMode.REMOVE);
 
                 foreach (var syncFileInfo in syncFileGroup.Files.OrderBy(o
                     => OrderBySyncFileMode(o.SyncFileMode)))
@@ -445,8 +496,13 @@ namespace Syncler.Data.Synchronisation
                     }
                 }
 
+                if (allowComplete)
+                    completedSyncFileGroups.Add(syncFileGroup);
+
                 _bwSyncler.ReportProgress(100 * groupsCounter / SyncFileGroups.Count());
             }
+
+            RemoveSyncFileGroups(completedSyncFileGroups);
         }
 
         //  --------------------------------------------------------------------------------
@@ -459,16 +515,23 @@ namespace Syncler.Data.Synchronisation
         private void OnSyncComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             SyncState = e.Cancelled ? SyncState.STOPPED_SYNCING : SyncState.NONE;
+            Logger.Instance.AddLog(DateTime.Now, $"Finished synchronisation", "Sync", SyncGroup.Name);
         }
 
         //  --------------------------------------------------------------------------------
         public void Stop()
         {
             if (_bwScanner != null && _bwScanner.IsBusy)
+            {
+                Logger.Instance.AddLog(DateTime.Now, $"Stopping scanning", "Scan", SyncGroup.Name);
                 _bwScanner.CancelAsync();
+            }
 
             else if (_bwSyncler != null && _bwSyncler.IsBusy)
+            {
+                Logger.Instance.AddLog(DateTime.Now, $"Stopping synchronisation", "Sync", SyncGroup.Name);
                 _bwSyncler.CancelAsync();
+            }
         }
 
         #endregion THREADS METHODS
@@ -516,7 +579,10 @@ namespace Syncler.Data.Synchronisation
         /// <param name="message"> Message. </param>
         private void StateMessageUpdate(string message)
         {
-            var action = new Action(() => SyncThreadUIContext.UpdateStateMessage(message));
+            var action = new Action(() =>
+            {
+                SyncThreadUIContext.UpdateStateMessage(message);
+            });
 
             if (!_dispatherHandler?.TryInvoke(action) ?? false)
                 action.Invoke();

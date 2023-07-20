@@ -30,6 +30,7 @@ namespace Syncler.Pages
             {
                 new MainMenuItem("Home", PackIconKind.Home, OnHomeMenuItemSelect),
                 new MainMenuItem("Synchronisation", PackIconKind.Sync, OnSynchronisationMenuItemSelect),
+                new MainMenuItem("Logger", PackIconKind.ScriptTextOutline, OnLoggerMenuItemSelect),
                 new MainMenuItem("Settings", PackIconKind.Gear, OnSettingsMenuItemSelect),
             };
         }
@@ -68,6 +69,15 @@ namespace Syncler.Pages
         private void OnSynchronisationMenuItemSelect(object sender, EventArgs e)
         {
             _pagesManager.LoadPage(new SynchronisationPage(_pagesManager));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after selecting home menu item. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Event Arguments. </param>
+        private void OnLoggerMenuItemSelect(object sender, EventArgs e)
+        {
+            _pagesManager.LoadPage(new LoggerPage(_pagesManager));
         }
 
         //  --------------------------------------------------------------------------------
