@@ -213,6 +213,10 @@ namespace Syncler.Data.Synchronisation
                 {
                     var destPath = Path.Combine(catalog, syncFileInfo.FileName);
                     Logger.Instance.AddLog(DateTime.Now, $"Copying file \"{syncFileInfo.FileName}\" to \"{catalog}\"", "Sync", SyncGroup.Name);
+
+                    if (!Directory.Exists(catalog))
+                        Directory.CreateDirectory(catalog);
+
                     File.Copy(syncFileInfo.FilePath, destPath);
                 }
             });
@@ -245,6 +249,10 @@ namespace Syncler.Data.Synchronisation
                 {
                     var destPath = Path.Combine(catalog, syncFileInfo.NewFileName);
                     Logger.Instance.AddLog(DateTime.Now, $"Copying file \"{syncFileInfo.NewFileName}\" to \"{catalog}\"", "Sync", SyncGroup.Name);
+                    
+                    if (!Directory.Exists(catalog))
+                        Directory.CreateDirectory(catalog);
+
                     File.Copy(syncFileInfo.FilePath, destPath);
                 }
 
@@ -491,7 +499,8 @@ namespace Syncler.Data.Synchronisation
                             break;
 
                         case SyncFileMode.COPY:
-                            CopyFile(syncFileInfo, catalogs.Where(cat => !filePaths.Any(p => cat == p)));
+                            CopyFile(syncFileInfo, catalogs.Where(cat => !filePaths.Any(p => cat == p)
+                                || !File.Exists(Path.Combine(cat, syncFileInfo.FileName))));
                             break;
                     }
                 }
