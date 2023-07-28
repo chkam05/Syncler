@@ -12,6 +12,8 @@
         <Setter Property="ScrollBarDraggingThumbBackground" Value="{Binding AppearanceAccentPressedBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
         <Setter Property="ScrollBarMouseOverThumbBackground" Value="{Binding AppearanceAccentMouseOverBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
         <Setter Property="ScrollBarThumbBackground" Value="{Binding AppearanceAccentColorBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
+        <Setter Property="ScrollBarHorizontalHeight" Value="4"/>
+        <Setter Property="ScrollBarVerticalWidth" Value="4"/>
     </Style>
 
 </ResourceDictionary>

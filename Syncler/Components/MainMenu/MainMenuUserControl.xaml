@@ -33,7 +33,7 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{Binding AppearanceThemeForegroundBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
-                <Setter Property="Height" Value="32"/>
+                <Setter Property="Height" Value="38"/>
                 <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type ItemsControl}}}"/>
                 <Setter Property="Margin" Value="1"/>
                 <Setter Property="MouseOverBackground" Value="{Binding AppearanceThemeMouseOverBrush, Source={StaticResource ConfigManager}, Mode=OneWay}"/>
@@ -92,7 +92,7 @@
                         Width="auto"/>
 
                     <TextBlock
-                        FontSize="14"
+                        FontSize="16"
                         FontWeight="SemiBold"
                         Grid.Column="1"
                         HorizontalAlignment="Left"

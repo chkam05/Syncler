@@ -28,7 +28,7 @@ namespace Syncler.Components.MainMenu
         //  CONST
 
         public const double DEFAULT_EXPANDED_WIDTH = 192d;
-        public const double DEFAULT_COLLAPSED_WIDTH = 38d;
+        public const double DEFAULT_COLLAPSED_WIDTH = 44d;
 
 
         //  DEPENDENCY PROPERTIES

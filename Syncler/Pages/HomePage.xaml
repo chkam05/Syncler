@@ -6,7 +6,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:cex="clr-namespace:chkam05.Tools.ControlsEx;assembly=chkam05.Tools.ControlsEx"
     xmlns:cfg="clr-namespace:Syncler.Data.Configuration"
+    xmlns:conv="clr-namespace:Syncler.Converters"
     xmlns:local="clr-namespace:Syncler.Pages"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:pages="clr-namespace:Syncler.Pages.Base"
     mc:Ignorable="d"
     
@@ -19,18 +21,298 @@
     <pages:BasePage.Resources>
         <ResourceDictionary>
 
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Generic.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Syncler;component/Themes/Pages/HomePageStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
             <x:Static x:Key="ConfigManager" Member="cfg:ConfigManager.Instance" />
+            
+            <!-- CONVERTERS -->
+
+            <conv:BoolVisibilityConverter x:Key="BoolVisibilityConverter"/>
+
+            <!-- DATA TEMPLATES -->
+
+            <DataTemplate x:Key="MenuItemDataTemplate">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <materialDesign:PackIcon
+                        Grid.Row="0"
+                        Height="24"
+                        HorizontalAlignment="Center"
+                        Kind="{Binding IconKind}"
+                        Width="24"
+                        VerticalAlignment="Center"/>
+
+                    <TextBlock
+                        Grid.Row="1"
+                        FontSize="14"
+                        HorizontalAlignment="Center"
+                        Text="{Binding Title}"
+                        VerticalAlignment="Center"
+                        TextWrapping="Wrap"/>
+                </Grid>
+            </DataTemplate>
+
+            <DataTemplate x:Key="SyncThreadDataTemplate">
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Grid.Row="0"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+
+                        <materialDesign:PackIcon
+                            Height="20"
+                            Kind="Group"
+                            Width="20"/>
+
+                        <TextBlock
+                            Margin="8,0"
+                            Text="{Binding SyncGroup.Name, Mode=OneWay}"
+                            VerticalAlignment="Center"/>
+
+                    </StackPanel>
+
+                    <Grid
+                        Grid.Column="0"
+                        Grid.Row="1"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom">
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel
+                            Grid.Row="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+
+                            <materialDesign:PackIcon
+                                Height="24"
+                                Kind="{Binding SyncThreadUIContext.StateIcon}"
+                                VerticalAlignment="Center"
+                                Width="24"/>
+
+                            <TextBlock
+                                Margin="8,0,0,0"
+                                Text="{Binding SyncThreadUIContext.StateMessage}"
+                                VerticalAlignment="Center"/>
+
+                        </StackPanel>
+
+                        <ProgressBar
+                            Grid.Row="1"
+                            Margin="2,4,2,0"
+                            MinHeight="3"
+                            Minimum="0"
+                            Maximum="{Binding SyncThreadUIContext.ProgressMax, Mode=OneWay}"
+                            Value="{Binding SyncThreadUIContext.Progress, Mode=OneWay}"
+                            Visibility="{Binding SyncThreadUIContext.ProgressVisibility, Mode=OneWay, Converter={StaticResource BoolVisibilityConverter}}"/>
+
+                    </Grid>
+
+                    <StackPanel
+                        Grid.Column="2"
+                        Grid.Row="1"
+                        Margin="0,8,0,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+
+                        <cex:ButtonEx
+                            Content="{Binding SyncThreadUIContext.ButtonCancelTitle}"
+                            IconKind="Stop"
+                            IsEnabled="{Binding SyncThreadUIContext.ButtonCancelEnabled}"
+                            Margin="8,0,0,0"
+                            Style="{StaticResource ThemeButtonExStyle}"
+                            Click="StopButtonEx_Click"/>
+
+                    </StackPanel>
+
+                </Grid>
+            </DataTemplate>
 
         </ResourceDictionary>
     </pages:BasePage.Resources>
 
     <Grid>
 
-        <TextBlock
-            FontSize="32"
-            HorizontalAlignment="Center"
-            Text="Syncler"
-            VerticalAlignment="Center"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid
+            Grid.Row="0"
+            Margin="16,16,16,8">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <cex:ScrollViewerEx
+                Grid.Column="0"
+                Margin="0,0,4,0"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel
+                    Orientation="Vertical">
+
+                    <Border
+                        Style="{StaticResource HomePageBorderStyle}">
+
+                        <StackPanel
+                            Orientation="Vertical">
+
+                            <StackPanel
+                                Orientation="Horizontal">
+
+                                <materialDesign:PackIcon
+                                    Height="24"
+                                    Kind="Menu"
+                                    Width="24"/>
+
+                                <TextBlock
+                                    FontSize="16"
+                                    Margin="8,0,0,0"
+                                    Text="Menu"
+                                    VerticalAlignment="Center"/>
+
+                            </StackPanel>
+
+                            <cex:ListViewEx
+                                ItemContainerStyle="{StaticResource MenuListViewItemExStyle}"
+                                ItemTemplate="{StaticResource MenuItemDataTemplate}"
+                                ItemsSource="{Binding MainMenuItems}"
+                                Margin="0,8,0,0"
+                                SelectionChanged="MenuListViewEx_SelectionChanged">
+                                <cex:ListViewEx.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel
+                                            Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </cex:ListViewEx.ItemsPanel>
+                            </cex:ListViewEx>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </StackPanel>
+
+            </cex:ScrollViewerEx>
+
+            <cex:ScrollViewerEx
+                Grid.Column="1"
+                Margin="4,0,0,0"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel
+                    Orientation="Vertical">
+
+                    <Border
+                        Style="{StaticResource HomePageBorderStyle}">
+
+                        <StackPanel
+                            Orientation="Vertical">
+
+                            <StackPanel
+                                Orientation="Horizontal">
+
+                                <materialDesign:PackIcon
+                                    Height="24"
+                                    Kind="Sync"
+                                    Width="24"/>
+
+                                <TextBlock
+                                    FontSize="16"
+                                    Margin="8,0,0,0"
+                                    Text="Current synchronisations"
+                                    VerticalAlignment="Center"/>
+
+                            </StackPanel>
+
+                            <cex:ListViewEx
+                                ItemContainerStyle="{StaticResource SyncThreadListViewItemExStyle}"
+                                ItemTemplate="{StaticResource SyncThreadDataTemplate}"
+                                ItemsSource="{Binding SyncManager.SyncThreads}"
+                                Margin="0,8,0,0"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </StackPanel>
+
+            </cex:ScrollViewerEx>
+
+        </Grid>
+
+        <Border
+            Grid.Row="1"
+            Margin="16,8,16,16"
+            Style="{StaticResource HomePageBorderStyle}">
+
+            <StackPanel
+                Orientation="Vertical">
+
+                <StackPanel
+                    Orientation="Horizontal">
+
+                    <TextBlock
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="{Binding InfoSettingsPageDataContext.Title}"
+                        VerticalAlignment="Bottom"/>
+
+                    <TextBlock
+                        FontSize="14"
+                        Margin="8,0,0,0"
+                        Text="v"
+                        VerticalAlignment="Bottom"/>
+
+                    <TextBlock
+                        FontSize="14"
+                        Margin="2,0,0,0"
+                        Text="{Binding InfoSettingsPageDataContext.Version}"
+                        VerticalAlignment="Bottom"/>
+
+                </StackPanel>
+
+                <TextBlock
+                    FontSize="14"
+                    Margin="0,8,0,0"
+                    Text="{Binding InfoSettingsPageDataContext.Description}"
+                    TextWrapping="Wrap"
+                    VerticalAlignment="Bottom"/>
+
+            </StackPanel>
+
+        </Border>
 
     </Grid>
     

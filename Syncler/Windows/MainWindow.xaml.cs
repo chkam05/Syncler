@@ -2,6 +2,7 @@
 using chkam05.Tools.ControlsEx.WindowsEx;
 using Syncler.Components.MainMenu;
 using Syncler.Data.Configuration;
+using Syncler.Data.Synchronisation;
 using Syncler.Pages;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
@@ -136,11 +137,7 @@ namespace Syncler.Windows
         /// <param name="e"> Mouse event arguments. </param>
         private void TrayIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            this.Show();
-            this.WindowState = WindowState.Normal;
-            this.Activate();
-
-            /*if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            if (e.Button == System.Windows.Forms.MouseButtons.Left && e.Clicks < 2)
             {
                 var trayWindow = Application.Current.Windows.Cast<Window>()
                     .FirstOrDefault(w => w.GetType() == typeof(TrayWindow));
@@ -153,7 +150,7 @@ namespace Syncler.Windows
                 trayWindow.Top = desktopWorkingArea.Bottom - (trayWindow.ActualHeight + 8);
                 trayWindow.Left = desktopWorkingArea.Right - (trayWindow.ActualWidth + 8);
                 trayWindow.Activate();
-            }*/
+            }
         }
 
         //  --------------------------------------------------------------------------------
@@ -209,7 +206,14 @@ namespace Syncler.Windows
             ConfigManager.SaveSettings();
 
             //  Dispose modules.
+            SyncManager.Instance.Dispose();
             TrayIcon.Dispose();
+
+            var trayWindow = Application.Current.Windows.Cast<Window>()
+                .FirstOrDefault(w => w.GetType() == typeof(TrayWindow));
+
+            if (trayWindow != null)
+                trayWindow.Close();
         }
 
         #endregion WINDOW METHODS

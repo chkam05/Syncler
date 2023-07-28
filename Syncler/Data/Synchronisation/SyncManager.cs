@@ -97,7 +97,22 @@ namespace Syncler.Data.Synchronisation
         /// <exception cref="NotImplementedException"></exception>
         public void Dispose()
         {
-            //
+            //  Remove threads.
+            if (SyncThreads?.Any() ?? false)
+            {
+                try
+                {
+                    foreach (var syncThread in SyncThreads)
+                    {
+                        syncThread.Dispose();
+                        SyncThreads.Remove(syncThread);
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    //  Just ignore that.
+                }
+            }
         }
 
         #endregion CLASS METHODS
@@ -154,7 +169,10 @@ namespace Syncler.Data.Synchronisation
             if (oldSyncThreads.Any())
             {
                 foreach (var oldSyncThread in oldSyncThreads)
+                {
+                    oldSyncThread.Dispose();
                     SyncThreads.Remove(oldSyncThread);
+                }
             }
         }
 

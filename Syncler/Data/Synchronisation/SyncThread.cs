@@ -100,7 +100,8 @@ namespace Syncler.Data.Synchronisation
         /// <summary> Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources. </summary>
         public void Dispose()
         {
-            Stop();
+            if (IsWorking())
+                Stop();
         }
 
         #endregion CLASS METHODS
@@ -323,7 +324,7 @@ namespace Syncler.Data.Synchronisation
         //  --------------------------------------------------------------------------------
         /// <summary> Check if thread is working. </summary>
         /// <returns> True - thread is working; False - otherwise. </returns>
-        public bool IsWorking() => IsScanning() || IsWorking();
+        public bool IsWorking() => IsScanning() || IsSyncing();
 
         #endregion STATE METHODS
 

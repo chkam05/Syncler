@@ -150,7 +150,7 @@ namespace Syncler.Data.Synchronisation
                     _buttonScanEnabled = false;
                     _buttonSyncEnabled = false;
                     _buttonCancelEnabled = true;
-                    _buttonCancelTitle = "Stop scanning";
+                    _buttonCancelTitle = "Stop scan";
                     _progressVisibility = true;
                     break;
 

@@ -319,8 +319,7 @@
                                     IconKind="Sync"
                                     IsEnabled="{Binding SyncThreadUIContext.ButtonSyncEnabled}"
                                     Margin="8,0,0,0"
-                                    Click="SyncFilesButtonEx_Click"
-                                    Visibility="{Binding SyncButtonVisibility}"/>
+                                    Click="SyncFilesButtonEx_Click"/>
 
                                 <cex:ButtonEx
                                     Content="{Binding SyncThreadUIContext.ButtonCancelTitle}"
