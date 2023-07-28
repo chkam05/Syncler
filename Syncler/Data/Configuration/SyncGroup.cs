@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -68,6 +69,39 @@ namespace Syncler.Data.Configuration
             {
                 _autoSync = value;
                 OnPropertyChanged(nameof(AutoSync));
+            }
+        }
+
+
+        public string ListingFilePath
+        {
+            get
+            {
+                string catalog = Path.Combine(
+                    Environment.GetEnvironmentVariable("APPDATA"),
+                    ApplicationHelper.GetApplicationName(),
+                    "Listings");
+
+                if (!Directory.Exists(catalog))
+                    Directory.CreateDirectory(catalog);
+
+                return Path.Combine(catalog, $"{Id}.json");
+            }
+        }
+
+        public string DiffrencesFilePath
+        {
+            get
+            {
+                string catalog = Path.Combine(
+                    Environment.GetEnvironmentVariable("APPDATA"),
+                    ApplicationHelper.GetApplicationName(),
+                    "Diffrences");
+
+                if (!Directory.Exists(catalog))
+                    Directory.CreateDirectory(catalog);
+
+                return Path.Combine(catalog, $"{Id}.json");
             }
         }
 

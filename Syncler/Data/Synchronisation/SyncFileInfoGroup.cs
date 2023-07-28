@@ -1,4 +1,5 @@
-﻿using Syncler.Data.Configuration;
+﻿using Newtonsoft.Json;
+using Syncler.Data.Configuration;
 using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
@@ -59,10 +60,17 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        [JsonIgnore]
         public string DiffMessage
         {
             get => _diffMessages != null && _diffMessages.Any() 
                 ? string.Join(Environment.NewLine, _diffMessages) : string.Empty;
+        }
+
+        public List<string> DiffMessages
+        {
+            get => _diffMessages;
+            set => _diffMessages = value;
         }
 
 

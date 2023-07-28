@@ -1,4 +1,5 @@
-﻿using Syncler.Utilities;
+﻿using Newtonsoft.Json;
+using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -67,6 +68,7 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        [JsonIgnore]
         public string FileName
         {
             get => Path.GetFileName(_filePath);
@@ -94,6 +96,7 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        [JsonIgnore]
         public string FileSizeStr
         {
             get
@@ -131,6 +134,7 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        [JsonIgnore]
         public string CreatedAtStr
         {
             get => _createdAt.ToString("yyyy.MM.dd HH:mm:ss");
@@ -147,14 +151,22 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        [JsonIgnore]
         public string ModifiedAtStr
         {
             get => _createdAt.ToString("yyyy.MM.dd HH:mm:ss");
         }
 
+        [JsonIgnore]
         public string DiffMessage
         {
             get => _diffMessages?.Any() ?? false ? string.Join(Environment.NewLine, _diffMessages) : string.Empty;
+        }
+
+        public List<string> DiffMessages
+        {
+            get => _diffMessages;
+            set => _diffMessages = value;
         }
 
         public SyncFileMode SyncFileMode
@@ -167,6 +179,7 @@ namespace Syncler.Data.Synchronisation
             }
         }
 
+        [JsonIgnore]
         public bool SyncFileModeUpdateLock
         {
             get => _syncFileModeUpdateLock;

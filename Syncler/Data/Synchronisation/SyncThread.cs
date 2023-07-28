@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic.FileIO;
+using Newtonsoft.Json;
 using Syncler.Data.Configuration;
 using Syncler.Data.Logs;
 using Syncler.Utilities;
@@ -184,11 +185,10 @@ namespace Syncler.Data.Synchronisation
                 if (_bwScanner.CancellationPending)
                     break;
 
-                FileInfo fileInfo = new FileInfo(filePath);
                 string subCatalog = path.Replace(basePath, string.Empty)
                     .Replace("\\", "/");
 
-                result.Add(new SyncTempFileInfo(filePath, fileInfo, subCatalog));
+                result.Add(new SyncTempFileInfo(filePath, subCatalog));
                 filesCount++;
                 StateMessageUpdate($"Scanned {filesCount} files.");
                 StateProgressUpdate(filesCount, filesCount);
@@ -201,6 +201,28 @@ namespace Syncler.Data.Synchronisation
 
                 ScanCatalog(basePath, directoryPath, result, ref filesCount);
             }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Scan files in catalogs for diffrences. </summary>
+        /// <param name="bw"> Background worker for scan process. </param>
+        /// <returns> List of scanned files listing. </returns>
+        private List<SyncTempFileInfo> ScanFiles(BackgroundWorker bw)
+        {
+            var catalogs = SyncGroup.Items.Select(i => i.Path);
+            long filesCounter = 0;
+            var filesListing = new List<SyncTempFileInfo>();
+            
+            foreach (var catalog in catalogs)
+            {
+                if (bw.CancellationPending)
+                    break;
+
+                ScanCatalog(catalog, catalog, filesListing, ref filesCounter);
+                Thread.Sleep(1000);
+            }
+
+            return filesListing;
         }
 
         #endregion FILES SCAN MANAGEMENT METHODS
@@ -328,7 +350,7 @@ namespace Syncler.Data.Synchronisation
 
         #endregion STATE METHODS
 
-        #region THREADS METHODS
+        #region SCAN THREAD METHODS
 
         //  --------------------------------------------------------------------------------
         /// <summary> Scan files for differences. </summary>
@@ -359,27 +381,17 @@ namespace Syncler.Data.Synchronisation
 
             try
             {
-                List<SyncTempFileInfo> files = new List<SyncTempFileInfo>();
-                var paths = SyncGroup.Items.Select(i => i.Path);
-                long filesCounter = 0;
-
                 //  Scan files and directories.
-                foreach (var path in paths)
-                {
-                    if (_bwScanner.CancellationPending)
-                        break;
-
-                    ScanCatalog(path, path, files, ref filesCounter);
-                    Thread.Sleep(1000);
-                }
-
+                List<SyncTempFileInfo> filesListing = ScanFiles(_bwScanner);
+                
                 if (_bwScanner.CancellationPending)
                     return;
 
                 //  Group files and directories.
-                var grouppedFiles = files.GroupBy(f => new { f.FileName, f.SubCatalog });
+                var grouppedFiles = filesListing.GroupBy(f => new { f.FileName, f.SubCatalog });
                 int groupsCounter = 0;
 
+                //  Find diffrences in files.
                 foreach (var fileGroup in grouppedFiles)
                 {
                     if (_bwScanner.CancellationPending)
@@ -473,6 +485,10 @@ namespace Syncler.Data.Synchronisation
             Logger.Instance.AddLog(DateTime.Now, $"Finished scanning", "Scan", SyncGroup.Name);
         }
 
+        #endregion SCAN THREAD METHODS
+
+        #region SYNC THREAD METHODS
+
         //  --------------------------------------------------------------------------------
         /// <summary> Sync files between catalogs. </summary>
         public void Sync()
@@ -500,6 +516,7 @@ namespace Syncler.Data.Synchronisation
             int groupsCounter = 0;
             var completedSyncFileGroups = new List<SyncFileInfoGroup>();
 
+            //  Sync files.
             foreach (var syncFileGroup in SyncFileGroups)
             {
                 if (_bwSyncler.CancellationPending)
@@ -556,6 +573,7 @@ namespace Syncler.Data.Synchronisation
                 _bwSyncler.ReportProgress(percentage, userState);
             }
 
+            //  Remove synced files groups.
             RemoveSyncFileGroups(completedSyncFileGroups);
         }
 
@@ -586,6 +604,10 @@ namespace Syncler.Data.Synchronisation
             SyncState = e.Cancelled ? SyncState.STOPPED_SYNCING : SyncState.NONE;
             Logger.Instance.AddLog(DateTime.Now, $"Finished synchronisation", "Sync", SyncGroup.Name);
         }
+
+        #endregion SYNC THREAD METHODS
+
+        #region THREADS METHODS
 
         //  --------------------------------------------------------------------------------
         /// <summary> Stop scan and sync files threads. </summary>
