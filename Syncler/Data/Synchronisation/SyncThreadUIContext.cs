@@ -27,6 +27,10 @@ namespace Syncler.Data.Synchronisation
         private PackIconKind _stateIcon = PackIconKind.None;
         private string _stateMessage = string.Empty;
 
+        private long _progress = 0;
+        private long _progressMax = 0;
+        private bool _progressVisibility = false;
+
 
         //  GETTERS & SETTERS
 
@@ -65,6 +69,31 @@ namespace Syncler.Data.Synchronisation
             get => _stateMessage;
         }
 
+        public long Progress
+        {
+            get => _progress;
+        }
+
+        public long ProgressMax
+        {
+            get => _progressMax;
+        }
+
+        public double ProcentageProgress
+        {
+            get => _progressMax >= 0 ? 0 : (_progress * 100) / _progressMax;
+        }
+
+        public bool ProgressVisibility
+        {
+            get => _progressVisibility;
+            set
+            {
+                _progressVisibility = value;
+                OnPropertyChanged(nameof(ProgressVisibility));
+            }
+        }
+
 
         //  METHODS
 
@@ -99,30 +128,10 @@ namespace Syncler.Data.Synchronisation
         #region UPDATE METHODS
 
         //  --------------------------------------------------------------------------------
-        /// <summary> Update synchronisation user interface data. </summary>
-        /// <param name="syncState"> Synchronisation state. </param>
-        /// <param name="anyScannedFile"> Is any file already scanned. </param>
-        public void UpdateUI(SyncState syncState, bool anyScannedFile = false)
-        {
-            UpdateButtons(syncState, anyScannedFile);
-            UpdateStateMessage(syncState, anyScannedFile);
-            NotifyPropertyChanges();
-        }
-
-        //  --------------------------------------------------------------------------------
-        /// <summary> Update synchronisation state message. </summary>
-        /// <param name="message"> New message. </param>
-        public void UpdateStateMessage(string message)
-        {
-            _stateMessage = message;
-            OnPropertyChanged(nameof(StateMessage));
-        }
-
-        //  --------------------------------------------------------------------------------
         /// <summary> Update ui buttons state and titles due to sync state. </summary>
         /// <param name="syncState"> Synchronisation state. </param>
         /// <param name="anyScannedFile"> Is any file already scanned. </param>
-        private void UpdateButtons(SyncState syncState, bool anyScannedFile = false)
+        private void UpdateComponents(SyncState syncState, bool anyScannedFile = false)
         {
             switch (syncState)
             {
@@ -134,6 +143,7 @@ namespace Syncler.Data.Synchronisation
                     _buttonSyncEnabled = anyScannedFile;
                     _buttonCancelEnabled = false;
                     _buttonCancelTitle = "Stop";
+                    _progressVisibility = false;
                     break;
 
                 case SyncState.SCANNING:
@@ -141,6 +151,7 @@ namespace Syncler.Data.Synchronisation
                     _buttonSyncEnabled = false;
                     _buttonCancelEnabled = true;
                     _buttonCancelTitle = "Stop scanning";
+                    _progressVisibility = true;
                     break;
 
                 case SyncState.SYNCING:
@@ -148,8 +159,35 @@ namespace Syncler.Data.Synchronisation
                     _buttonSyncEnabled = false;
                     _buttonCancelEnabled = true;
                     _buttonCancelTitle = "Stop sync";
+                    _progressVisibility = true;
                     break;
             }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update synchronisation progress. </summary>
+        /// <param name="progress"> Progress. </param>
+        /// <param name="progressMax"> Progress max value. </param>
+        public void UpdateProgress(long progress, long? progressMax = null)
+        {
+            if (progressMax.HasValue && _progressMax != progressMax.Value && progressMax.Value >= 0)
+            {
+                _progressMax = progressMax.Value;
+                OnPropertyChanged(nameof(ProgressMax));
+            }
+
+            _progress = Math.Max(0, Math.Min(progress, _progressMax));
+            OnPropertyChanged(nameof(Progress));
+            OnPropertyChanged(nameof(ProcentageProgress));
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update synchronisation state message. </summary>
+        /// <param name="message"> New message. </param>
+        public void UpdateStateMessage(string message)
+        {
+            _stateMessage = message;
+            OnPropertyChanged(nameof(StateMessage));
         }
 
         //  --------------------------------------------------------------------------------
@@ -188,6 +226,17 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Update synchronisation user interface data. </summary>
+        /// <param name="syncState"> Synchronisation state. </param>
+        /// <param name="anyScannedFile"> Is any file already scanned. </param>
+        public void UpdateUI(SyncState syncState, bool anyScannedFile = false)
+        {
+            UpdateComponents(syncState, anyScannedFile);
+            UpdateStateMessage(syncState, anyScannedFile);
+            NotifyPropertyChanges();
+        }
+
+        //  --------------------------------------------------------------------------------
         /// <summary> Notify properites changed. </summary>
         private void NotifyPropertyChanges()
         {
@@ -198,6 +247,7 @@ namespace Syncler.Data.Synchronisation
             OnPropertyChanged(nameof(ButtonCancelTitle));
             OnPropertyChanged(nameof(StateIcon));
             OnPropertyChanged(nameof(StateMessage));
+            OnPropertyChanged(nameof(ProgressVisibility));
         }
 
         #endregion UPDATE METHODS

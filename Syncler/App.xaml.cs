@@ -1,6 +1,7 @@
 ﻿using chkam05.Tools.ControlsEx.InternalMessages;
 using Syncler.Data.Configuration;
 using Syncler.Data.Logs;
+using Syncler.Data.Synchronisation;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
 using Syncler.Windows;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +27,7 @@ namespace Syncler
         public ConfigManager ConfigurationManager { get; private set; }
         public ApplicationInstanceCommunicator InstancesListener { get; private set; }
         public Logger Logger { get; private set; }
+        public SyncManager SyncManager { get; private set; }
 
 
         //  METHODS
@@ -54,6 +57,7 @@ namespace Syncler
                 InstancesListener = new ApplicationInstanceCommunicator(appName);
                 Logger = Logger.Instance;
                 Logger.AddLog(DateTime.Now, "Application started");
+                SyncManager = SyncManager.Instance;
             }
 
             base.OnStartup(e);
@@ -64,6 +68,8 @@ namespace Syncler
         /// <param name="e"> Exit Event Arguments. </param>
         protected override void OnExit(ExitEventArgs e)
         {
+            SyncManager.Dispose();
+
             if (InstancesListener != null)
                 InstancesListener.Dispose();
 

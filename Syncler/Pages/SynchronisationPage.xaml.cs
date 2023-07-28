@@ -45,7 +45,7 @@ namespace Syncler.Pages
         public SynchronisationPage(PagesManager pagesManager) : base(pagesManager)
         {
             //  Initialize modules.
-            SyncManager = SyncManager.Instance;
+            SyncManager = ((App)Application.Current).SyncManager;
             SyncManager.UpdateDispatcherHandler(new DispatcherHandler(this.Dispatcher));
 
             //  Initialize data.

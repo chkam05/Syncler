@@ -17,7 +17,7 @@ using static Syncler.Delegates;
 
 namespace Syncler.Data.Synchronisation
 {
-    public class SyncManager : INotifyPropertyChanged
+    public class SyncManager : INotifyPropertyChanged, IDisposable
     {
 
         //  EVENTS
@@ -90,6 +90,14 @@ namespace Syncler.Data.Synchronisation
             //  Initialize modules.
             ConfigManager = ConfigManager.Instance;
             ConfigManager.PropertyChanged += OnConfigUpdate;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Dispose SyncManager and threads. </summary>
+        /// <exception cref="NotImplementedException"></exception>
+        public void Dispose()
+        {
+            //
         }
 
         #endregion CLASS METHODS

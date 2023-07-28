@@ -36,6 +36,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="chkam05.Tools.ControlsEx, Version=2.4.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\chkam05.Tools.ControlsEx.2.4.4\lib\net472\chkam05.Tools.ControlsEx.dll</HintPath>
@@ -211,6 +214,7 @@
     <Compile Include="Data\Synchronisation\SyncState.cs" />
     <Compile Include="Data\Synchronisation\SyncTempFileInfo.cs" />
     <Compile Include="Data\Synchronisation\SyncThread.cs" />
+    <Compile Include="Data\Synchronisation\SyncThreadProgressHandler.cs" />
     <Compile Include="Data\Synchronisation\SyncThreadUIContext.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="InternalMessages\AddModifySyncGroupIM.xaml.cs">
@@ -282,7 +286,9 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="Icon.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\MaterialDesignThemes.4.5.0\build\MaterialDesignThemes.targets" Condition="Exists('packages\MaterialDesignThemes.4.5.0\build\MaterialDesignThemes.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

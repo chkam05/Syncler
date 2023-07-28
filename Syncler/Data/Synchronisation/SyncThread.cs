@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -189,6 +190,7 @@ namespace Syncler.Data.Synchronisation
                 result.Add(new SyncTempFileInfo(filePath, fileInfo, subCatalog));
                 filesCount++;
                 StateMessageUpdate($"Scanned {filesCount} files.");
+                StateProgressUpdate(filesCount, filesCount);
             }
 
             foreach (var directoryPath in Directory.GetDirectories(path))
@@ -205,6 +207,9 @@ namespace Syncler.Data.Synchronisation
         #region FILES SYNC MANAGEMENT METHODS
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Copy file to another directories. </summary>
+        /// <param name="syncFileInfo"> Synchronisation file info. </param>
+        /// <param name="catalogs"> Destination catalogs/directories. </param>
         private void CopyFile(SyncFileInfo syncFileInfo, IEnumerable<string> catalogs)
         {
             var action = new Action(() =>
@@ -226,6 +231,8 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Remove file. </summary>
+        /// <param name="syncFileInfo"> Synchronisation file info. </param>
         private void RemoveFile(SyncFileInfo syncFileInfo)
         {
             var action = new Action(() =>
@@ -239,6 +246,9 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Rename file and copy to another directories. </summary>
+        /// <param name="syncFileInfo"> Synchronisation file info. </param>
+        /// <param name="catalogs"> Destination catalogs/directories. </param>
         private void RenameAndCopyFile(SyncFileInfo syncFileInfo, IEnumerable<string> catalogs)
         {
             var action = new Action(() =>
@@ -264,6 +274,8 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Remove synchronised file groups from scan. </summary>
+        /// <param name="completedSyncFileGroups"> Synchronised file groups. </param>
         private void RemoveSyncFileGroups(List<SyncFileInfoGroup> completedSyncFileGroups)
         {
             var action = new Action(() =>
@@ -406,7 +418,17 @@ namespace Syncler.Data.Synchronisation
                     syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
 
                     if (!syncFileInfoGroup.ValidateFiles(SyncGroup, EnumHelper.GetEnumValues<SyncFileDiffrence>().ToArray()))
-                        _bwScanner.ReportProgress(100 * groupsCounter / grouppedFiles.Count(), syncFileInfoGroup);
+                    {
+                        var userState = new SyncThreadProgressHandler()
+                        {
+                            Message = "Comparing files {procentage}% ...",
+                            Parameter = syncFileInfoGroup,
+                            Progress = groupsCounter,
+                            ProgressMax = grouppedFiles.Count(),
+                        };
+                        int percentage = (int)(100d * userState.Progress / userState.ProgressMax);
+                        _bwScanner.ReportProgress(percentage, userState);
+                    }
                 }
             }
             catch (Exception)
@@ -421,12 +443,22 @@ namespace Syncler.Data.Synchronisation
         /// <param name="e"> Progress Changed Event Arguments. </param>
         private void OnScanProgress(object sender, ProgressChangedEventArgs e)
         {
-            var syncFileInfoGroup = e.UserState as SyncFileInfoGroup;
+            var userState = e.UserState as SyncThreadProgressHandler;
 
-            if (syncFileInfoGroup != null)
+            if (userState != null)
             {
-                AddSyncFileGroup(syncFileInfoGroup);
-                StateMessageUpdate($"Comparing files {e.ProgressPercentage}% ...");
+                var syncFileInfoGroup = userState.Parameter as SyncFileInfoGroup;
+
+                if (syncFileInfoGroup != null)
+                {
+                    var message = userState.Message.Replace("{procentage}", $"{e.ProgressPercentage}");
+
+                    AddSyncFileGroup(syncFileInfoGroup);
+                    StateMessageUpdate(message);
+
+                    if (userState.Progress.HasValue)
+                        StateProgressUpdate(userState.Progress.Value, userState.ProgressMax);
+                }
             }
         }
 
@@ -441,6 +473,7 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Sync files between catalogs. </summary>
         public void Sync()
         {
             Stop();
@@ -458,6 +491,9 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Sync files between catalogs - work. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Do Work Event Arguments. </param>
         private void Sync(object sender, DoWorkEventArgs e)
         {
             int groupsCounter = 0;
@@ -508,19 +544,42 @@ namespace Syncler.Data.Synchronisation
                 if (allowComplete)
                     completedSyncFileGroups.Add(syncFileGroup);
 
-                _bwSyncler.ReportProgress(100 * groupsCounter / SyncFileGroups.Count());
+                var userState = new SyncThreadProgressHandler()
+                {
+                    Message = "Synchronising files {procentage}% ...",
+                    Parameter = syncFileGroup,
+                    Progress = groupsCounter,
+                    ProgressMax = SyncFileGroups.Count(),
+                };
+                int percentage = (int)(100d * userState.Progress / userState.ProgressMax);
+                _bwSyncler.ReportProgress(percentage, userState);
             }
 
             RemoveSyncFileGroups(completedSyncFileGroups);
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after reporting in synchronisation files for notification process. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Progress Changed Event Arguments. </param>
         private void OnSyncProgress(object sender, ProgressChangedEventArgs e)
         {
-            StateMessageUpdate($"Synchronising files {e.ProgressPercentage}% ...");
+            var userState = e.UserState as SyncThreadProgressHandler;
+
+            if (userState != null)
+            {
+                var message = userState.Message.Replace("{procentage}", $"{e.ProgressPercentage}");
+                StateMessageUpdate(message);
+
+                if (userState.Progress.HasValue)
+                    StateProgressUpdate(userState.Progress.Value, userState.ProgressMax);
+            }
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after finishing synchronisation files. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Run Worker Completed Event Arguments. </param>
         private void OnSyncComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             SyncState = e.Cancelled ? SyncState.STOPPED_SYNCING : SyncState.NONE;
@@ -528,6 +587,7 @@ namespace Syncler.Data.Synchronisation
         }
 
         //  --------------------------------------------------------------------------------
+        /// <summary> Stop scan and sync files threads. </summary>
         public void Stop()
         {
             if (_bwScanner != null && _bwScanner.IsBusy)
@@ -591,6 +651,20 @@ namespace Syncler.Data.Synchronisation
             var action = new Action(() =>
             {
                 SyncThreadUIContext.UpdateStateMessage(message);
+            });
+
+            if (!_dispatherHandler?.TryInvoke(action) ?? false)
+                action.Invoke();
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Update message displayed during files scan/sync. </summary>
+        /// <param name="message"> Message. </param>
+        private void StateProgressUpdate(long progress, long? maxProgress = null)
+        {
+            var action = new Action(() =>
+            {
+                SyncThreadUIContext.UpdateProgress(progress, maxProgress);
             });
 
             if (!_dispatherHandler?.TryInvoke(action) ?? false)

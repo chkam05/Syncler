@@ -30,6 +30,7 @@
             
             <!-- CONVERTERS -->
 
+            <conv:BoolVisibilityConverter x:Key="BoolVisibilityConverter"/>
             <conv:StringDefaultValueConverter x:Key="StringDefaultValueConverter"/>
             <conv:StringNullVisibilityConverter x:Key="StringNullVisibilityConverter"/>
             <convSync:SyncFileModeNameConverter x:Key="SyncFileModeNameConverter"/>
@@ -270,16 +271,41 @@
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
 
-                                <materialDesign:PackIcon
-                                    Height="24"
-                                    Kind="{Binding SyncThreadUIContext.StateIcon}"
-                                    VerticalAlignment="Center"
-                                    Width="24"/>
+                                <Grid>
+                                    
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                <TextBlock
-                                    Margin="8,0,0,0"
-                                    Text="{Binding SyncThreadUIContext.StateMessage}"
-                                    VerticalAlignment="Center"/>
+                                    <StackPanel
+                                        Grid.Row="0"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+
+                                        <materialDesign:PackIcon
+                                            Height="24"
+                                            Kind="{Binding SyncThreadUIContext.StateIcon}"
+                                            VerticalAlignment="Center"
+                                            Width="24"/>
+
+                                        <TextBlock
+                                            Margin="8,0,0,0"
+                                            Text="{Binding SyncThreadUIContext.StateMessage}"
+                                            VerticalAlignment="Center"/>
+
+                                    </StackPanel>
+
+                                    <ProgressBar
+                                        Grid.Row="1"
+                                        Margin="2,4,2,0"
+                                        MinHeight="3"
+                                        Minimum="0"
+                                        Maximum="{Binding SyncThreadUIContext.ProgressMax, Mode=OneWay}"
+                                        Value="{Binding SyncThreadUIContext.Progress, Mode=OneWay}"
+                                        Visibility="{Binding SyncThreadUIContext.ProgressVisibility, Mode=OneWay, Converter={StaticResource BoolVisibilityConverter}}"/>
+
+                                </Grid>
 
                                 <cex:ButtonEx
                                     Content="{Binding SyncThreadUIContext.ButtonScanTitle}"

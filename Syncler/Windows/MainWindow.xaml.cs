@@ -6,21 +6,9 @@ using Syncler.Pages;
 using Syncler.Pages.Base;
 using Syncler.Utilities;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Syncler.Windows
 {
@@ -30,6 +18,7 @@ namespace Syncler.Windows
         //  VARIABLES
 
         public ConfigManager ConfigManager { get; private set; }
+        public System.Windows.Forms.NotifyIcon TrayIcon;
 
 
         //  GETTERS & SETTERS
@@ -58,6 +47,18 @@ namespace Syncler.Windows
 
             //  Initialize user interface.
             InitializeComponent();
+            InitializeTrayIcon();
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after changing Window state. </summary>
+        /// <param name="e"> Event arguments. </param>
+        protected override void OnStateChanged(EventArgs e)
+        {
+            if (WindowState == WindowState.Minimized)
+                this.Hide();
+
+            base.OnStateChanged(e);
         }
 
         #endregion CLASS METHODS
@@ -112,6 +113,62 @@ namespace Syncler.Windows
 
         #endregion PAGES MANAGER INTERACTION METHODS
 
+        #region SYSTEM TRAY
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Initialize system tray icon. </summary>
+        private void InitializeTrayIcon()
+        {
+            TrayIcon = new System.Windows.Forms.NotifyIcon();
+            TrayIcon.BalloonTipText = "Syncler has been minimised. Click the tray icon to show.";
+            TrayIcon.BalloonTipTitle = "Show Syncler";
+            TrayIcon.Text = "Syncler";
+            Stream iconStream = Application.GetResourceStream(new Uri("pack://application:,,,/Syncler;component/Icon.ico")).Stream;
+            TrayIcon.Icon = new System.Drawing.Icon(iconStream);
+            TrayIcon.MouseClick += TrayIcon_MouseClick;
+            TrayIcon.DoubleClick += TrayIcon_DoubleClick;
+            TrayIcon.Visible = true;
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking on tray icon. </summary>
+        /// <param name="sender"> Object from which method has been invoked. </param>
+        /// <param name="e"> Mouse event arguments. </param>
+        private void TrayIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+
+            /*if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                var trayWindow = Application.Current.Windows.Cast<Window>()
+                    .FirstOrDefault(w => w.GetType() == typeof(TrayWindow));
+
+                if (trayWindow == null)
+                    trayWindow = new TrayWindow();
+                trayWindow.Show();
+
+                var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                trayWindow.Top = desktopWorkingArea.Bottom - (trayWindow.ActualHeight + 8);
+                trayWindow.Left = desktopWorkingArea.Right - (trayWindow.ActualWidth + 8);
+                trayWindow.Activate();
+            }*/
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after double clicking on tray icon. </summary>
+        /// <param name="sender"> Object from which method has been invoked. </param>
+        /// <param name="e"> Event arguments. </param>
+        private void TrayIcon_DoubleClick(object sender, EventArgs e)
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+        }
+
+        #endregion SYSTEM TRAY
+
         #region WINDOW METHODS
 
         //  --------------------------------------------------------------------------------
@@ -150,6 +207,9 @@ namespace Syncler.Windows
 
             //  Save settings.
             ConfigManager.SaveSettings();
+
+            //  Dispose modules.
+            TrayIcon.Dispose();
         }
 
         #endregion WINDOW METHODS
