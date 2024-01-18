@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskBand;
 
 namespace Syncler.Data.Synchronisation
 {
@@ -389,13 +390,23 @@ namespace Syncler.Data.Synchronisation
 
                 //  Group files and directories.
                 var grouppedFiles = filesListing.GroupBy(f => new { f.FileName, f.SubCatalog });
+                var groupCount = grouppedFiles.Count();
                 int groupsCounter = 0;
+                int previousProcentage = 0;
+
+                var syncMethods = ConfigManager.Instance.SyncMethods.ToArray();
+                var useChecksum = syncMethods.Contains(SyncFileDiffrence.Checksum);
+
+                StateMessageUpdate($"Comparing files...");
+                StateProgressUpdate(0, groupCount);
 
                 //  Find diffrences in files.
                 foreach (var fileGroup in grouppedFiles)
                 {
                     if (_bwScanner.CancellationPending)
                         break;
+
+                    DateTime startTime = DateTime.Now;
 
                     groupsCounter++;
 
@@ -430,17 +441,48 @@ namespace Syncler.Data.Synchronisation
 
                     syncFileInfoGroup.Files = new ObservableCollection<SyncFileInfo>(syncFiles);
 
+                    //  EnumHelper.GetEnumValues<SyncFileDiffrence>().ToArray()
                     if (!syncFileInfoGroup.ValidateFiles(SyncGroup, EnumHelper.GetEnumValues<SyncFileDiffrence>().ToArray()))
                     {
+                        long elapsedSeconds = CalculateTime(startTime, DateTime.Now, groupsCounter, groupCount);
+                        long elapsedMinutes = elapsedSeconds / 60;
+                        long elapsedHours = elapsedMinutes / 60;
+                        long elapsedDays = elapsedHours / 24;
+
+                        int percentage = (int)(100d * groupsCounter / Math.Max(1, groupCount));
+
+                        elapsedSeconds = elapsedSeconds - (elapsedMinutes * 60);
+                        elapsedMinutes = elapsedMinutes - (elapsedHours * 60);
+
                         var userState = new SyncThreadProgressHandler()
                         {
-                            Message = "Comparing files {procentage}% ...",
+                            Message = $"Comparing files {percentage}% Elapsed time: {elapsedDays} days {elapsedHours} hours {elapsedMinutes} minutes ...",
                             Parameter = syncFileInfoGroup,
                             Progress = groupsCounter,
-                            ProgressMax = grouppedFiles.Count(),
+                            ProgressMax = groupCount,
                         };
-                        int percentage = (int)(100d * userState.Progress / userState.ProgressMax);
+                        
                         _bwScanner.ReportProgress(percentage, userState);
+                    }
+                    else
+                    {
+                        long elapsedSeconds = CalculateTime(startTime, DateTime.Now, groupsCounter, groupCount);
+                        long elapsedMinutes = elapsedSeconds / 60;
+                        long elapsedHours = elapsedMinutes / 60;
+                        long elapsedDays = elapsedHours / 24;
+
+                        int percentage = (int)(100d * groupsCounter / Math.Max(1, groupCount));
+
+                        elapsedSeconds = elapsedSeconds - (elapsedMinutes * 60);
+                        elapsedMinutes = elapsedMinutes - (elapsedHours * 60);
+                        elapsedHours = elapsedHours - (elapsedDays * 24);
+
+                        if (percentage != previousProcentage)
+                        {
+                            previousProcentage = percentage;
+                            StateMessageUpdate($"Comparing files {percentage}% Elapsed time: {elapsedDays} days {elapsedHours} hours {elapsedMinutes} minutes ...");
+                            StateProgressUpdate(groupsCounter, groupCount);
+                        }
                     }
                 }
             }
@@ -464,7 +506,7 @@ namespace Syncler.Data.Synchronisation
 
                 if (syncFileInfoGroup != null)
                 {
-                    var message = userState.Message.Replace("{procentage}", $"{e.ProgressPercentage}");
+                    var message = userState.Message;
 
                     AddSyncFileGroup(syncFileInfoGroup);
                     StateMessageUpdate(message);
@@ -644,6 +686,21 @@ namespace Syncler.Data.Synchronisation
                     return BitConverter.ToString(checksumBytes).Replace("-", string.Empty);
                 }
             }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Calculate time. </summary>
+        /// <param name="startTime"> Start time previous files comparation. </param>
+        /// <param name="endTime"> End time previous files comparation. </param>
+        /// <param name="filesCounter"> Files counter. </param>
+        /// <param name="filesCount"> Files count. </param>
+        /// <returns>Time left in minutes. </returns>
+        private long CalculateTime(DateTime startTime, DateTime endTime, int filesCounter, int filesCount)
+        {
+            var totalSeconds = (long)(endTime - startTime).TotalSeconds;
+            var filesLeft = Math.Max(1, (filesCount - filesCounter));
+
+            return totalSeconds * filesLeft;
         }
 
         //  --------------------------------------------------------------------------------

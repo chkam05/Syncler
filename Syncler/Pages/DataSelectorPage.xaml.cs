@@ -69,11 +69,11 @@ namespace Syncler.Pages
             //  Initialize modules.
             ConfigManager = ConfigManager.Instance;
 
-            //  Setup data.
-            SetupData();
-
             //  Initialize user interface.
             InitializeComponent();
+
+            //  Setup data.
+            SetupData();
         }
 
         #endregion CLASS METHODS
@@ -143,6 +143,28 @@ namespace Syncler.Pages
                 InternalMessagesHelper.ApplyVisualStyle(imFilesSelector);
                 imContainer.ShowMessage(imFilesSelector);
             }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking comparation methods button. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void ComparationMethodsButtonEx_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ButtonEx buttonEx)
+            {
+                if (buttonEx.ContextMenu != null)
+                    buttonEx.ContextMenu.IsOpen = true;
+            }
+        }
+
+        //  --------------------------------------------------------------------------------
+        /// <summary> Method invoked after clicking comparation methods context menu item. </summary>
+        /// <param name="sender"> Object that invoked method. </param>
+        /// <param name="e"> Routed Event Arguments. </param>
+        private void CompareMethodContextMenuItemEx_Click(object sender, RoutedEventArgs e)
+        {
+            _dataModified = true;
         }
 
         //  --------------------------------------------------------------------------------
@@ -273,6 +295,20 @@ namespace Syncler.Pages
             if (_dataModified)
             {
                 ConfigManager.SyncGroups = SyncGroupCollection.ToList();
+
+                var syncMethods = new List<SyncFileDiffrence>();
+
+                if (_nameContextMenuItemEx.IsChecked)
+                    syncMethods.Add(SyncFileDiffrence.Name);
+
+                if (_checksumContextMenuItemEx.IsChecked)
+                    syncMethods.Add(SyncFileDiffrence.Checksum);
+
+                if (_sizeContextMenuItemEx.IsChecked)
+                    syncMethods.Add(SyncFileDiffrence.Size);
+
+                ConfigManager.SyncMethods = syncMethods;
+
                 ConfigManager.SaveSettings();
             }
 
@@ -284,6 +320,11 @@ namespace Syncler.Pages
         private void SetupData()
         {
             SyncGroupCollection = new ObservableCollection<SyncGroup>(ConfigManager.SyncGroups);
+
+            _nameContextMenuItemEx.IsChecked = ConfigManager.SyncMethods.Contains(SyncFileDiffrence.Name);
+            _checksumContextMenuItemEx.IsChecked = ConfigManager.SyncMethods.Contains(SyncFileDiffrence.Checksum);
+            _sizeContextMenuItemEx.IsChecked = ConfigManager.SyncMethods.Contains(SyncFileDiffrence.Size);
+
             _dataModified = false;
         }
 

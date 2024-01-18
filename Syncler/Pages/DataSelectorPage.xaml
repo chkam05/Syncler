@@ -146,6 +146,38 @@
                 Orientation="Horizontal">
 
                 <cex:ButtonEx
+                    Content="Comparing methods"
+                    IconKind="FileCompare"
+                    Click="ComparationMethodsButtonEx_Click">
+                    <cex:ButtonEx.ContextMenu>
+                        <cex:ContextMenuEx>
+
+                            <cex:ContextMenuItemEx
+                                x:Name="_nameContextMenuItemEx"
+                                Header="Name"
+                                IconKind="SubtitlesOutline"
+                                IsCheckable="True"
+                                Click="CompareMethodContextMenuItemEx_Click"/>
+
+                            <cex:ContextMenuItemEx
+                                x:Name="_checksumContextMenuItemEx"
+                                Header="Checksum"
+                                IconKind="Numeric"
+                                IsCheckable="True"
+                                Click="CompareMethodContextMenuItemEx_Click"/>
+
+                            <cex:ContextMenuItemEx
+                                x:Name="_sizeContextMenuItemEx"
+                                Header="Size"
+                                IconKind="Weight"
+                                IsCheckable="True"
+                                Click="CompareMethodContextMenuItemEx_Click"/>
+
+                        </cex:ContextMenuEx>
+                    </cex:ButtonEx.ContextMenu>
+                </cex:ButtonEx>
+
+                <cex:ButtonEx
                     Content="Add group"
                     IconKind="Add"
                     Click="AddSyncGroupButtonEx_Click"/>

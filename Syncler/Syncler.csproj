@@ -75,6 +75,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Converters\Synchronisation\SyncFileModeNameConverter.cs" />
     <Compile Include="Windows\TrayWindow.xaml.cs">
       <DependentUpon>TrayWindow.xaml</DependentUpon>
     </Compile>
@@ -200,7 +201,6 @@
     <Compile Include="Converters\SolidColorBrushOpacityConverter.cs" />
     <Compile Include="Converters\StringDefaultValueConverter.cs" />
     <Compile Include="Converters\StringNullVisibilityConverter.cs" />
-    <Compile Include="Converters\Synchronisation\SyncFileModeNameConverter.cs" />
     <Compile Include="Converters\Synchronisation\SyncFileModeRenameVisibilityConverter.cs" />
     <Compile Include="Data\Configuration\AppearanceColor.cs" />
     <Compile Include="Data\Configuration\AppearanceConfig.cs" />

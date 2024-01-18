@@ -1,6 +1,7 @@
 ﻿using chkam05.Tools.ControlsEx.Colors;
 using Newtonsoft.Json;
 using Syncler.Attributes;
+using Syncler.Data.Synchronisation;
 using Syncler.Utilities;
 using System;
 using System.Collections.Generic;
@@ -100,6 +101,17 @@ namespace Syncler.Data.Configuration
             {
                 _config.SyncGroups = value;
                 OnPropertyChanged(nameof(SyncGroups));
+            }
+        }
+
+        [ConfigPropertyUpdateAttrib]
+        public List<SyncFileDiffrence> SyncMethods
+        {
+            get => _config.SyncMethods;
+            set
+            {
+                _config.SyncMethods = value;
+                OnPropertyChanged(nameof(SyncMethods));
             }
         }
 
