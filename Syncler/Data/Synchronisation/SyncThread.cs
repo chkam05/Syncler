@@ -430,7 +430,7 @@ namespace Syncler.Data.Synchronisation
                             FilePath = f.FilePath,
                             CreatedAt = fileInfo.CreationTime,
                             ModifiedAt = fileInfo.LastWriteTime,
-                            Checksum = CalculateChecksum(fileInfo),
+                            Checksum = useChecksum ? CalculateChecksum(fileInfo) : string.Empty,
                             FileSize = fileInfo.Length,
                         };
 
